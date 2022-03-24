@@ -38,10 +38,15 @@ class TestBuildDatabase(unittest.TestCase):
         self.assertEqual(matrix.shape, (len(db.wavelengths), db.getCountFiles()))
         
     def testDownload(self):
-        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=0'
+        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
         r = requests.get(url, allow_redirects=True)
         with open('test.db', 'wb') as file:
             file.write(r.content)
 
+    def testDownload(self):
+        db = RamanDB()
+        db.downloadDatabase()
+        self.assertTrue(os.path.exists('raman-download.db'))
+        
 if __name__ == "__main__":
     unittest.main()

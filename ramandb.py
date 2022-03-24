@@ -7,25 +7,27 @@ class RamanDB(Database):
     def __init__(self, writePermission=False):  
         """
         Creates the database object for Raman spectra.
-
         """
 
         self.databasePath = "raman.db"
         if not os.path.exists(self.databasePath):
-            # url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
-            # r = requests.get(url, allow_redirects=True)
-            # with open('raman.db', 'wb') as file:
-            #     file.write(r.content)
-
-
-            raise RuntimeError("""
-Raman database raman.db not available.
-Get it at {0}
-and save it in this directory under the name raman.db""".format(self.url))
+            print("The raman.db file is not available. Atttempting to download")
+            filename = self.downloadDatabase()
+            if os.path.exists(filename) and not os.path.exists(self.databasePath):
+                os.rename(filename, self.databasePath)
+                print("Success. File has been renamed raman.db")                
 
         self._wavelengths = None
         self.progressStart = None
         super().__init__(self.databasePath, writePermission=writePermission)
+
+    def downloadDatabase(self):
+        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
+        r = requests.get(url, allow_redirects=True)
+        filename = "raman-download.db"
+        with open(filename, 'wb') as file:
+            file.write(r.content)
+        return filename
 
     @property
     def wavelengths(self):
