@@ -3,7 +3,7 @@ import numpy as np
 import requests
 
 class RamanDB(Database):
-    url = "https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=0"
+    url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
     def __init__(self, writePermission=False):  
         """
         Creates the database object for Raman spectra.
@@ -11,7 +11,7 @@ class RamanDB(Database):
 
         self.databasePath = "raman.db"
         if not os.path.exists(self.databasePath):
-            print("The raman.db file is not available. Atttempting to download")
+            print("The raman.db file is not available. Atttempting to download from {0}".format(self.url))
             filename = self.downloadDatabase()
             if os.path.exists(filename) and not os.path.exists(self.databasePath):
                 os.rename(filename, self.databasePath)
@@ -22,8 +22,7 @@ class RamanDB(Database):
         super().__init__(self.databasePath, writePermission=writePermission)
 
     def downloadDatabase(self):
-        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
-        r = requests.get(url, allow_redirects=True)
+        r = requests.get(self.url, allow_redirects=True)
         filename = "raman-download.db"
         with open(filename, 'wb') as file:
             file.write(r.content)

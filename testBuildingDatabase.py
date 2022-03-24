@@ -45,8 +45,9 @@ class TestBuildDatabase(unittest.TestCase):
 
     def testDownload(self):
         db = RamanDB()
-        db.downloadDatabase()
-        self.assertTrue(os.path.exists('raman-download.db'))
-        
+        filename = db.downloadDatabase()
+        self.assertTrue(os.path.exists(filename))
+        os.remove(filename)
+
 if __name__ == "__main__":
     unittest.main()
