@@ -18,6 +18,23 @@ To be written.
 
 ## Database
 
+You can do :
+
+```python
+import ramandb
+
+db = RamanDB()
+matrix = db.getIntensities() 
+```
+
+Or run the tests to confirm everything is working. The database will be downloaded if needed.
+
+
+
+### Building the database
+
+You do not need to do that. This is for reference.
+
 It is easier to use a database to get all the spectra easily, with all their metadata. The first step is to create the database.
 
 The database used is currently `sqlite3`, available on macOS by default, and downloadable for Windows. We open the (empty) database:
