@@ -3,6 +3,7 @@ import numpy as np
 from dcclab import Database
 import os
 from ramandb import RamanDB
+import requests
 
 class TestBuildDatabase(unittest.TestCase):
     def testDatabase(self):
@@ -36,5 +37,11 @@ class TestBuildDatabase(unittest.TestCase):
         self.assertIsNotNone(matrix)
         self.assertEqual(matrix.shape, (len(db.wavelengths), db.getCountFiles()))
         
+    def testDownload(self):
+        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=0'
+        r = requests.get(url, allow_redirects=True)
+        with open('test.db', 'wb') as file:
+            file.write(r.content)
+
 if __name__ == "__main__":
     unittest.main()

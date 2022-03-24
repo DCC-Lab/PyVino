@@ -1,7 +1,9 @@
 from dcclab.database import *
 import numpy as np
+import requests
 
 class RamanDB(Database):
+    url = "https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=0"
     def __init__(self, writePermission=False):  
         """
         Creates the database object for Raman spectra.
@@ -9,6 +11,18 @@ class RamanDB(Database):
         """
 
         self.databasePath = "raman.db"
+        if not os.path.exists(self.databasePath):
+            # url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
+            # r = requests.get(url, allow_redirects=True)
+            # with open('raman.db', 'wb') as file:
+            #     file.write(r.content)
+
+
+            raise RuntimeError("""
+Raman database raman.db not available.
+Get it at {0}
+and save it in this directory under the name raman.db""".format(self.url))
+
         self._wavelengths = None
         self.progressStart = None
         super().__init__(self.databasePath, writePermission=writePermission)
