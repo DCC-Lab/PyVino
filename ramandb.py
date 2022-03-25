@@ -65,8 +65,8 @@ class RamanDB(Database):
 
     def getIntensities(self, limit=None):
         stmnt = """
-        select wavelength, intensity from spectra 
-        inner join files on files.md5 = spectra.md5
+        select wavelength, intensity, files.path from spectra 
+        inner join files on files.fid = spectra.fid
         order by files.path, wavelength """
 
         wavelengths = self.getWavelengths()
@@ -86,10 +86,14 @@ class RamanDB(Database):
             return None
 
         spectra = np.zeros(shape=(nWavelengths, nSamples))
+        wineIdentifiers = [""]*nSamples
         for i,row in enumerate(rows):
             spectra[i%nWavelengths, i//nWavelengths] = float(row['intensity'])
+            match = re.search(r"([A-Z]+)_?\d+.txt", row["path"])
+            if match is not None:
+                wineIdentifiers[i//nWavelengths] = match.group(1)
 
-        return spectra
+        return spectra, wineIdentifiers
 
     def showProgressBar(self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
         """
