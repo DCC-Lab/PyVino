@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from scipy import interpolate
-from BaselineRemoval import BaselineRemoval
+# from BaselineRemoval import BaselineRemoval
 
 
 class vinoPCA:
 
-    def __init__(self, Data, numberOfEachSamples):
+    def __init__(self):
 
         """
         :param Data: The data on wich PCA should be done.
@@ -186,11 +186,12 @@ class vinoPCA:
 
 
 if __name__ == "__main__":
+    db = RamanDB()
+    spectra, labels = db.getIntensities()
+    # iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30, 30] # sans vin blanc parceque ça shit le aspect ratio
+    # Data = np.genfromtxt('/Users/Shooshoo/PycharmProjects/PCA_DCCLab/DataVino_Sorted.csv', delimiter=',')
 
-    iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30, 30] # sans vin blanc parceque ça shit le aspect ratio
-    Data = np.genfromtxt('/Users/Shooshoo/PycharmProjects/PCA_DCCLab/DataVino_Sorted.csv', delimiter=',')
-
-    my_Spectrums = vinoPCA(Data, iterable)
+    my_Spectrums = vinoPCA(spectra, iterable)
     my_Spectrums.doPCA(10)
     my_Spectrums.showTransformedData3D()
     my_Spectrums.showTransformedData2D()
