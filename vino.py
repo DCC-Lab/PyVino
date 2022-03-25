@@ -24,10 +24,10 @@ class vinoPCA:
         :return: Return a colormap to visualise different samples on the plot.
         """
 
-        spectra, labels = self.getIntensities()
+        spectra, labels = self.db.getIntensities()
 
         uniqueLabelsInOrder = sorted(set(labels))
-        possibleColorsInOrder = range(len(possibleLabelsInOrder)*5)
+        possibleColorsInOrder = range(len(uniqueLabelsInOrder))
         colors = {}
         for identifier, color in zip(uniqueLabelsInOrder, possibleColorsInOrder):
             colors[identifier] = color 
@@ -36,7 +36,7 @@ class vinoPCA:
         for identifier in labels:
             colormap.append(colors[identifier])
             
-        return colormap
+        return np.array(colormap)*5
 
     def removeFLuo(self, Data):
 
