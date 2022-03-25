@@ -4,8 +4,6 @@ Projet d'identification et caracterisation des vins avec la spectroscopie Raman.
 
 Le plan est d'utiliser une analyse par composantes principales (PCA) avec le module SKlearn.
 
-
-
 ## Context
 
 To be written.
@@ -18,6 +16,8 @@ To be written.
 
 ## Database
 
+### Usage
+
 You can do :
 
 ```python
@@ -27,7 +27,7 @@ db = RamanDB()
 matrix = db.getIntensities() 
 ```
 
-Or run the tests to confirm everything is working. The database will be downloaded if needed.
+to get th spectra.  You should run the tests `testDatabase.py` to confirm everything is working. The database will be downloaded if needed.
 
 
 
@@ -64,11 +64,31 @@ Then, back into `sqlite3 raman.db`, we actually import:
 .import files.csv spectralfiles
 ```
 
-Then we import all spectra. 
+Then we import all spectra. From the Terminal, we get the files and format them:
 
-```
+```shell
 find . -name "*csv" -exec python3 formatspectroforimport.py {} \; > importall.csv
 ```
 
+then import the files.
 
+```sqlite
+.mode csv
+.sep "|"
+.import files.csv importall.csv
+```
+
+
+
+### Database schema
+
+```sqlite
+CREATE TABLE files (path text, md5 text primary key, date text );
+CREATE TABLE spectra (wavelength real, intensity real, md5 text);
+CREATE INDEX md5Idx on spectra(md5);
+CREATE INDEX md5Idx2 on files(md5);
+CREATE INDEX waveIdx on spectra(wavelength);
+CREATE TABLE samples (name text, identifier text, type text, grape text, alcohol number, url text);
+
+```
 
