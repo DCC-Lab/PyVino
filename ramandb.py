@@ -47,6 +47,19 @@ class RamanDB(Database):
 
         return wavelengths
 
+    def getWineIdentifiers(self):
+        
+        self.execute(r"select path from spectra inner join files on files.fid = spectra.fid group by spectra.fid")
+        rows = self.fetchAll()
+
+        wineIdentifiers = set()
+        for row in rows:
+            match = re.search(r"([A-Z]+)_?\d+.txt", row["path"])
+            if match is not None:
+                wineIdentifiers.add(match.group(1))
+
+        return sorted(wineIdentifiers)
+
 
     def getCountFiles(self):
         self.execute(r"select count(*) as count from files")
