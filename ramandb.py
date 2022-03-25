@@ -3,7 +3,7 @@ import numpy as np
 import requests
 
 class RamanDB(Database):
-    url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
+    url = 'https://www.dropbox.com/s/peowchyj7xyib4w/raman.db?dl=1'
     def __init__(self, writePermission=False):  
         """
         Creates the database object for Raman spectra.

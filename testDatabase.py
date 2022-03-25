@@ -44,7 +44,6 @@ class TestBuildDatabase(unittest.TestCase):
         with open('test.db', 'wb') as file:
             file.write(r.content)
 
-    @unittest.skip("Ok, tested")
     def testDownload(self):
         db = RamanDB()
         filename = db.downloadDatabase()
