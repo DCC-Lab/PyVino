@@ -1,5 +1,6 @@
 from dcclab.database import *
 import numpy as np
+import matplotlib.pyplot as plt
 import requests
 
 class RamanDB(Database):
@@ -125,3 +126,9 @@ class RamanDB(Database):
         
         if iteration == total: 
             self.progressStart = None
+
+if __name__ == "__main__":
+    db = RamanDB()
+    spectra, labels = db.getIntensities()
+    plt.plot(spectra[:,0:2])
+    plt.show()
