@@ -15,25 +15,21 @@ class vinoPCA:
         :param colormap: An iterable that contains how many of each samples there is in Data, in the good order.
         """
 
-        if Data is None:
-            self.db = RamanDB()
-            self.db.execute("select count(*) as count, substr(path,16,1) as id from files where id != 'T' group by id order by id")
-            records = self.db.fetchAll()
-            numberOfEachSamples = []
-            for record in records:
-                numberOfEachSamples.append(record["count"])
-            # iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30,
-            #             30]  # sans vin blanc parceque ça shit le aspect ratio
-            total = sum(numberOfEachSamples)
+        self.db = RamanDB()
+        self.db.execute("select count(*) as count, substr(path,16,1) as id from files where id != 'T' group by id order by id")
+        records = self.db.fetchAll()
+        numberOfEachSamples = []
+        for record in records:
+            numberOfEachSamples.append(record["count"])
+        # iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30,
+        #             30]  # sans vin blanc parceque ça shit le aspect ratio
+        total = sum(numberOfEachSamples)
 
-            data, labels = self.db.getIntensities()
-            wavelengths = self.db.getWavelengths()
-            wavelengths = np.expand_dims(wavelengths, 1)
-            self.Data = np.concatenate((wavelengths, wavelengths, data[:, 0:total]), axis=1)
-            self.numberOfEachSamples = numberOfEachSamples
-        else:
-            self.Data = Data
-            self.numberOfEachSamples = numberOfEachSamples
+        data, labels = self.db.getIntensities()
+        wavelengths = self.db.getWavelengths()
+        wavelengths = np.expand_dims(wavelengths, 1)
+        self.Data = np.concatenate((wavelengths, wavelengths, data[:, 0:total]), axis=1)
+        self.numberOfEachSamples = numberOfEachSamples
 
     def getColorMap(self):
 
@@ -42,13 +38,19 @@ class vinoPCA:
         :return: Return a colormap to visualise different samples on the plot.
         """
 
-        for i in range(0, len(self.numberOfEachSamples)):
-            if i == 0:
-                colormap = np.zeros(self.numberOfEachSamples[0])
-            else:
-                colormap = np.append(colormap, np.ones(self.numberOfEachSamples[i]) *5*i)
+        spectra, labels = self.db.getIntensities()
 
-        return colormap
+        uniqueLabelsInOrder = sorted(set(labels))
+        possibleColorsInOrder = range(len(uniqueLabelsInOrder))
+        colors = {}
+        for identifier, color in zip(uniqueLabelsInOrder, possibleColorsInOrder):
+            colors[identifier] = color*5
+
+        colormap = []
+        for identifier in labels:
+            colormap.append(colors[identifier])
+
+        return np.array(colormap[0:700])
 
     def removeFLuo(self, Data):
 
