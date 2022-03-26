@@ -66,6 +66,15 @@ class TestVInoClass(unittest.TestCase):
         my_Spectrums.showTransformedData2D()
         my_Spectrums.showEigenvectors()
 
+    def testvinoPCANoArgument(self):
+        my_Spectrums = vinoPCA()
+        self.assertIsNotNone(my_Spectrums)
+
+        my_Spectrums.doPCA(10)
+        my_Spectrums.showTransformedData3D()
+        my_Spectrums.showTransformedData2D()
+        my_Spectrums.showEigenvectors()
+
     # def testInitDB(self):
     #     self.assertIsNotNone(vinoPCA().db)
 
