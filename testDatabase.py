@@ -23,19 +23,19 @@ class TestBuildDatabase(unittest.TestCase):
 
     def testFileCount(self):
         db = RamanDB()
-        self.assertIsNotNone(db.getCountFiles())
-        self.assertEqual(db.getCountFiles(), 709)
+        self.assertIsNotNone(db.getFileCount())
+        self.assertEqual(db.getFileCount(), 709)
 
     def testFilePaths(self):
         db = RamanDB()
         self.assertIsNotNone(db.getSpectraPaths())
-        self.assertEqual(db.getCountFiles(), len(db.getSpectraPaths()))
+        self.assertEqual(db.getFileCount(), len(db.getSpectraPaths()))
 
     def testGetIntensity(self):
         db = RamanDB()
         matrix, labels = db.getIntensities()
         self.assertIsNotNone(matrix)
-        self.assertEqual(matrix.shape, (len(db.wavelengths), db.getCountFiles()))
+        self.assertEqual(matrix.shape, (len(db.wavelengths), db.getFileCount()))
 
     @unittest.skip("Ok, tested")
     def testDownload(self):
@@ -65,6 +65,41 @@ class TestBuildDatabase(unittest.TestCase):
             statement = "update spectra set fid={0} where md5='{1}'".format(record["fid"], record["md5"])
             db.execute(statement)
 
+    @unittest.skip("done")
+    def testBuildWineIdAndSampleId(self):
+        db.execute('update files set sampleId=substr(path,18,2) where path like "%\_%" ESCAPE "\"')
+
+    def testWineIdentifiers(self):
+        db = RamanDB()
+        print(db.getIdentifiers())
+
+    def testWinesSummary(self):
+        db = RamanDB()
+        wineSummary = db.getWinesSummary()
+        print(wineSummary)
+
+    def testStoreCorrectedSpectra(self):
+        db = RamanDB(writePermission=False)
+        db.storeCorrectedSpectra()
+
+    def testDataTypes(self):
+        db = RamanDB(writePermission=False)
+        print(db.getDataTypes())
+
+    def testGetSpectraValidType(self):
+        db = RamanDB(writePermission=False)
+        spectra, spectrumIds = db.getSpectraWithId(dataType='raw')
+        self.assertIsNotNone(spectra)
+
+    def testGetSpectraValidTypeFluorescence(self):
+        db = RamanDB(writePermission=False)
+        spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
+        self.assertIsNotNone(spectra)
+
+    def testGetSpectraInvalidType(self):
+        db = RamanDB(writePermission=False)
+        with self.assertRaises(ValueError):
+            spectra = db.getSpectraWithId(dataType='unknown')
 
 if __name__ == "__main__":
     unittest.main()

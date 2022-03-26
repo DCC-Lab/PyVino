@@ -9,15 +9,9 @@ from ramandb import RamanDB
 class vinoPCA:
 
     def __init__(self):
-
-        """
-        :param Data: The data on wich PCA should be done.
-        :param colormap: An iterable that contains how many of each samples there is in Data, in the good order.
-        """
-
         self.db = RamanDB()
-
-        self.data, self.labels = self.db.getIntensities()
+        self.constraints = []
+        self.data, self.labels = self.db.getSpectraWithLabels()
         self.wavelengths = self.db.getWavelengths()
 
         self.wavelengthMask = range(200, 1000)

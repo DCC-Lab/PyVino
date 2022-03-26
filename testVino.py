@@ -31,33 +31,15 @@ class TestVInoClass(unittest.TestCase):
         # Data = np.genfromtxt('/Users/Shooshoo/PycharmProjects/PCA_DCCLab/DataVino_Sorted.csv', delimiter=',')
         # After a bit of playing around: column 0 is not used, column 1 is the wavelengths, then its
         # the data
-        db = RamanDB()
-        data, labels = db.getIntensities()
-        wavelengths = db.getWavelengths()
-        wavelengths = np.expand_dims(wavelengths, 1)
-
-        data = np.concatenate( (wavelengths, wavelengths, data[:,0:total]), axis=1 )
-        # self.assertEqual(data.shape[1], total)
-        my_Spectrums = vinoPCA(data, iterable)
+        my_Spectrums = vinoPCA()
 
         self.assertIsNotNone(my_Spectrums)
 
-        my_Spectrums.removeFLuo(my_Spectrums.Data)
+        my_Spectrums.subtractFluorescence()
 
 
     def testDoPCA(self):
-        iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30, 30] # sans vin blanc parceque ça shit le aspect ratio
-        total = sum(iterable)
-
-        # Data = np.genfromtxt('/Users/Shooshoo/PycharmProjects/PCA_DCCLab/DataVino_Sorted.csv', delimiter=',')
-        db = RamanDB()
-        data, labels = db.getIntensities()
-        wavelengths = db.getWavelengths()
-        wavelengths = np.expand_dims(wavelengths, 1)
-
-        data = np.concatenate( (wavelengths, wavelengths, data[:,0:total]), axis=1 )
-        # self.assertEqual(data.shape[1], total)
-        my_Spectrums = vinoPCA(data, iterable)
+        my_Spectrums = vinoPCA()
 
         self.assertIsNotNone(my_Spectrums)
 
