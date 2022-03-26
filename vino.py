@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from scipy import interpolate
 from ramandb import RamanDB
-# from BaselineRemoval import BaselineRemoval
+from BaselineRemoval import BaselineRemoval
 
 
 class vinoPCA:
@@ -12,8 +12,7 @@ class vinoPCA:
     def __init__(self):
 
         """
-        :param Data: The data on wich PCA should be done.
-        :param colormap: An iterable that contains how many of each samples there is in Data, in the good order.
+        The database is assumed to be in the same directory and called 'raman.db'
         """
         self.db = RamanDB()
 
