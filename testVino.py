@@ -83,7 +83,7 @@ class TestVInoClass(unittest.TestCase):
         cm = vino.getColorMap()
         self.assertIsNotNone(cm)
         spectra, labels = vino.db.getIntensities()
-        self.assertEqual(len(cm), len(labels)-9)
+        self.assertEqual(len(cm), len(labels))
 
     # def testOneSpectrum(self):
     #     vino = vinoPCA()

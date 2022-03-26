@@ -16,12 +16,6 @@ class vinoPCA:
         """
 
         self.db = RamanDB()
-        self.db.execute("select count(*) as count, substr(path,16,1) as id from files where id != 'T' group by id order by id")
-        records = self.db.fetchAll()
-        numberOfEachSamples = []
-        for record in records:
-            numberOfEachSamples.append(record["count"])
-        total = sum(numberOfEachSamples)
 
         self.data, self.labels = self.db.getIntensities()
         self.wavelengths = self.db.getWavelengths()
@@ -33,19 +27,17 @@ class vinoPCA:
         :return: Return a colormap to visualise different samples on the plot.
         """
 
-        spectra, labels = self.db.getIntensities()
-
-        uniqueLabelsInOrder = sorted(set(labels))
+        uniqueLabelsInOrder = sorted(set(self.labels))
         possibleColorsInOrder = range(len(uniqueLabelsInOrder))
         colors = {}
         for identifier, color in zip(uniqueLabelsInOrder, possibleColorsInOrder):
             colors[identifier] = color*5
 
         colormap = []
-        for identifier in labels:
+        for identifier in self.labels:
             colormap.append(colors[identifier])
 
-        return np.array(colormap[0:700])
+        return np.array(colormap)
 
     def removeFLuo(self, Data):
 
@@ -92,7 +84,7 @@ class vinoPCA:
         :return: Returns nothing. Just creats an array of the transformed datas into the new vector space
         """
         wavelengths = np.expand_dims(self.wavelengths, 1)
-        Data = np.concatenate((wavelengths, wavelengths, self.data[:, 0:total]), axis=1)
+        Data = np.concatenate((wavelengths, wavelengths, self.data[:, 0:700]), axis=1)
 
         new_Datas = self.removeFLuo(Data)
         # new_Datas = self.Data[:,0:-1]
