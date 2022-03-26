@@ -44,7 +44,7 @@ class vinoPCA:
         nm = Data[:, 1]
         cm = 1 / (632.8e-9) - 1 / (nm * 1e-9)
         size = np.ma.size(Data, 1)
-        polynomial_degree = 100
+        polynomial_degree = 5
         filtered_datas = np.zeros(shape=(800, size - 1))
 
         # for column in range(2, size):
@@ -79,6 +79,7 @@ class vinoPCA:
         """
 
         new_Datas = self.removeFLuo(self.Data)
+        # new_Datas = self.Data[:,0:-1]
         new_Datas = np.transpose(new_Datas)
         self.X_PCA = PCA(n_components=n)
         self.X_reduced = self.X_PCA.fit_transform(new_Datas[1:, :])
