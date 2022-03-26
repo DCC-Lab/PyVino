@@ -78,12 +78,12 @@ class TestVInoClass(unittest.TestCase):
     # def testInitDB(self):
     #     self.assertIsNotNone(vinoPCA().db)
 
-    # def testColormap(self):
-    #     vino = vinoPCA()
-    #     cm = vino.getColorMap()
-    #     self.assertIsNotNone(cm)
-    #     spectra, labels = vino.db.getIntensities()
-    #     self.assertEqual(len(cm), len(labels))
+    def testColormap(self):
+        vino = vinoPCA()
+        cm = vino.getColorMap()
+        self.assertIsNotNone(cm)
+        spectra, labels = vino.db.getIntensities()
+        self.assertEqual(len(cm), len(labels)-9)
 
     # def testOneSpectrum(self):
     #     vino = vinoPCA()

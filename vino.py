@@ -21,15 +21,10 @@ class vinoPCA:
         numberOfEachSamples = []
         for record in records:
             numberOfEachSamples.append(record["count"])
-        # iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30,
-        #             30]  # sans vin blanc parceque ça shit le aspect ratio
         total = sum(numberOfEachSamples)
 
-        data, labels = self.db.getIntensities()
-        wavelengths = self.db.getWavelengths()
-        wavelengths = np.expand_dims(wavelengths, 1)
-        self.Data = np.concatenate((wavelengths, wavelengths, data[:, 0:total]), axis=1)
-        self.numberOfEachSamples = numberOfEachSamples
+        self.data, self.labels = self.db.getIntensities()
+        self.wavelengths = self.db.getWavelengths()
 
     def getColorMap(self):
 
@@ -96,8 +91,10 @@ class vinoPCA:
         :param n: number of componants to get from the PCA
         :return: Returns nothing. Just creats an array of the transformed datas into the new vector space
         """
+        wavelengths = np.expand_dims(self.wavelengths, 1)
+        Data = np.concatenate((wavelengths, wavelengths, self.data[:, 0:total]), axis=1)
 
-        new_Datas = self.removeFLuo(self.Data)
+        new_Datas = self.removeFLuo(Data)
         # new_Datas = self.Data[:,0:-1]
         new_Datas = np.transpose(new_Datas)
         self.X_PCA = PCA(n_components=n)
