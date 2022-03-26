@@ -8,7 +8,7 @@ from ramandb import RamanDB
 
 class vinoPCA:
 
-    def __init__(self, Data=None, numberOfEachSamples=None):
+    def __init__(self):
 
         """
         :param Data: The data on wich PCA should be done.
@@ -20,10 +20,9 @@ class vinoPCA:
         self.data, self.labels = self.db.getIntensities()
         self.wavelengths = self.db.getWavelengths()
 
-        # TO BE REMOVED
-        self.data = self.data[200:1000, 0:700]
-        self.labels = self.labels[0:700]
-        self.wavelengths = self.wavelengths[200:1000]
+        self.wavelengthMask = range(200, 1000)
+        self.data = self.data[self.wavelengthMask, :]
+        self.wavelengths = self.wavelengths[self.wavelengthMask]
 
     def getColorMap(self):
 
@@ -44,12 +43,11 @@ class vinoPCA:
 
         return np.array(colormap)
 
-    def removeFLuo(self, Data=None):
+    def subtractFluorescence(self):
 
         """
-        Remove fluorescence background from the data given.
-        :param Data: The Data from witch you wish to remove fluo background.
-        :return: A new set of Data without the background.
+        Remove fluorescence background from the data.
+        :return: A corrected data without the background.
         """
 
         polynomial_degree = 5
@@ -67,11 +65,9 @@ class vinoPCA:
         :param n: number of componants to get from the PCA
         :return: Returns nothing. Just creats an array of the transformed datas into the new vector space
         """
-        new_Datas = self.removeFLuo()
-        # new_Datas = self.Data[:,0:-1]
-        new_Datas = np.transpose(new_Datas)
-        self.X_PCA = PCA(n_components=n)
-        self.X_reduced = self.X_PCA.fit_transform(new_Datas)
+        self.pca = PCA(n_components=n)
+        correctedData = self.subtractFluorescence()
+        self.X_reduced = self.pca.fit_transform(correctedData.T)
 
     def showTransformedData3D(self):
 
@@ -128,7 +124,7 @@ class vinoPCA:
         :return: an array of n eigenvector
         """
 
-        return self.X_PCA.components_.transpose()
+        return self.pca.components_.transpose()
 
     def showEigenvectors(self):
 
@@ -138,13 +134,13 @@ class vinoPCA:
         """
         plt.figure(3)
         plt.title('1st eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 0])
+        plt.plot(self.pca.components_.transpose()[:, 0])
         plt.figure(4)
         plt.title('2nd eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 1])
+        plt.plot(self.pca.components_.transpose()[:, 1])
         plt.figure(5)
         plt.title('3rd eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 2])
+        plt.plot(self.pca.components_.transpose()[:, 2])
         plt.show()
 
     def getTransformedDatas(self):
@@ -163,7 +159,7 @@ class vinoPCA:
         :return: array of the scree values, from most important to least
         """
 
-        return self.X_PCA.explained_variance_ratio_
+        return self.pca.explained_variance_ratio_
 
     def plotScreeValues(self):
 
