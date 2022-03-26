@@ -20,6 +20,11 @@ class vinoPCA:
         self.data, self.labels = self.db.getIntensities()
         self.wavelengths = self.db.getWavelengths()
 
+        # TO BE REMOVED
+        self.data = self.data[200:1000, 0:700]
+        self.labels = self.labels[0:700]
+        self.wavelengths = self.wavelengths[200:1000]
+
     def getColorMap(self):
 
         """
@@ -39,7 +44,7 @@ class vinoPCA:
 
         return np.array(colormap)
 
-    def removeFLuo(self, Data):
+    def removeFLuo(self, Data=None):
 
         """
         Remove fluorescence background from the data given.
@@ -47,34 +52,13 @@ class vinoPCA:
         :return: A new set of Data without the background.
         """
 
-        nm = Data[:, 1]
-        cm = 1 / (632.8e-9) - 1 / (nm * 1e-9)
-        size = np.ma.size(Data, 1)
         polynomial_degree = 5
-        filtered_datas = np.zeros(shape=(800, size - 1))
+        correctedSpectra = np.empty_like(self.data)
+        for i in range(self.data.shape[1]):
+            spectre = self.data[:, i]
+            correctedSpectra[:, i] = BaselineRemoval(spectre).IModPoly(polynomial_degree)
 
-        # for column in range(2, size):
-        #     y = Data[:, column]
-        #     d = 25
-        #     f2 = interpolate.interp1d(cm[199:][::d], y[199:][::d], kind='quadratic')
-        #     y = y[200:1000] - f2(cm[200:1000])
-        #     y = (y - min(y)) / max(y - min(y))
-        #     filt_datas[:, column - 1] = y
-        # filt_datas[:, 0] = cm[200:1000]
-
-        for column in range(2, size):
-            spectre = Data[200:1000, column]
-            baseObj = BaselineRemoval(spectre)
-            values = baseObj.IModPoly(polynomial_degree)
-            # values = values - min(values) # Si tu normalises, tu perds les composants communs (Alcool particulèrement)
-            # values = values/max(values)   # tu perds aussi le degrés de présence (Plus ou moins bouchonné ?)
-                                            # Si tu normalises pas, tu favorises les composants communs présents à
-                                            # différents degrés (Plus ou moins d'alcool). Donc tester avec et sans?
-            filtered_datas[:, column - 1] = values
-
-        filtered_datas[:, 0] = Data[200:1000, 1]
-
-        return filtered_datas
+        return correctedSpectra
 
     def doPCA(self, n:int):
 
@@ -83,14 +67,11 @@ class vinoPCA:
         :param n: number of componants to get from the PCA
         :return: Returns nothing. Just creats an array of the transformed datas into the new vector space
         """
-        wavelengths = np.expand_dims(self.wavelengths, 1)
-        Data = np.concatenate((wavelengths, wavelengths, self.data[:, 0:700]), axis=1)
-
-        new_Datas = self.removeFLuo(Data)
+        new_Datas = self.removeFLuo()
         # new_Datas = self.Data[:,0:-1]
         new_Datas = np.transpose(new_Datas)
         self.X_PCA = PCA(n_components=n)
-        self.X_reduced = self.X_PCA.fit_transform(new_Datas[1:, :])
+        self.X_reduced = self.X_PCA.fit_transform(new_Datas)
 
     def showTransformedData3D(self):
 
@@ -103,9 +84,9 @@ class vinoPCA:
         fig = plt.figure(1, figsize=(8, 6))
         ax = Axes3D(fig, elev=-150, azim=110)
         ax.scatter(
-            self.X_reduced[:700, 0],
-            self.X_reduced[:700, 1],
-            self.X_reduced[:700, 2],
+            self.X_reduced[:, 0],
+            self.X_reduced[:, 1],
+            self.X_reduced[:, 2],
             c=self.getColorMap(),
             cmap='nipy_spectral',
             s=10)
@@ -127,7 +108,7 @@ class vinoPCA:
 
         plt.clf()
         plt.figure(2)
-        plt.scatter(self.X_reduced[:700, 0], self.X_reduced[:700, 1], c=self.getColorMap(), cmap='nipy_spectral', s=10)
+        plt.scatter(self.X_reduced[:, 0], self.X_reduced[:, 1], c=self.getColorMap(), cmap='nipy_spectral', s=10)
         plt.title('First two PCA directions')
         plt.xlabel('1st eigenvector')
         plt.ylabel('2nd eigenvector')

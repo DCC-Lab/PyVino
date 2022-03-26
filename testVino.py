@@ -70,7 +70,7 @@ class TestVInoClass(unittest.TestCase):
         my_Spectrums = vinoPCA()
         self.assertIsNotNone(my_Spectrums)
 
-        my_Spectrums.doPCA(10)
+        my_Spectrums.doPCA(3)
         my_Spectrums.showTransformedData3D()
         my_Spectrums.showTransformedData2D()
         my_Spectrums.showEigenvectors()
