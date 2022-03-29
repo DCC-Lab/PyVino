@@ -116,10 +116,6 @@ class TestBuildDatabase(unittest.TestCase):
     def testBuildWineIdAndSampleId(self):
         db.execute('update files set sampleId=substr(path,18,2) where path like "%\_%" ESCAPE "\"')
 
-    def testWineIdentifiers(self):
-        db = RamanDB()
-        print(db.getIdentifiers())
-
     def testWinesSummary(self):
         db = RamanDB()
         wineSummary = db.getWinesSummary()
@@ -129,7 +125,7 @@ class TestBuildDatabase(unittest.TestCase):
         valueRecord = db.fetchOne()
         self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(db.getWavelengths()))
 
-    @unittest.skip("Not ready")
+    @unittest.skip("This function is not ready")
     def testStoreCorrectedSpectra(self):
         db = RamanDB()
         db.storeCorrectedSpectra()
@@ -141,24 +137,15 @@ class TestBuildDatabase(unittest.TestCase):
         for record in records:
             print(record)
 
-    # def testStoreSingleSpectrum(self):
-    #     spectra, spectrumIds = self.getSpectraWithId(dataType='raw')
-    #     correctedSpectra = self.subtractFluorescence(spectra)
-    #     for i in range( correctedSpectra.shape[1]):
-    #         spectrumId = spectrumIds[i]
-    #         print("Running for spectrum {0}".format(spectrumId))
-    #         for x,y in zip(self.wavelengths, correctedSpectra[:,i]):
-    #             # self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(?, ?, ?, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())", (x,y, spectrumId))
-    #             self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(%s, %s, %s, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())",(x, y, spectrumId))
-
     def testDataTypes(self):
         db = RamanDB()
         self.assertTrue('raw' in db.getDataTypes())
 
     def testGetSpectraValidTypeFluorescence(self):
         db = RamanDB()
-        spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
-        self.assertIsNotNone(spectra)
+        if 'fluorescence-corrected' in db.getDataTypes():
+            spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
+            self.assertIsNotNone(spectra)
 
     def testGetSpectraInvalidType(self):
         db = RamanDB()
