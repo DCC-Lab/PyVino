@@ -82,7 +82,7 @@ class RamanDB(Database):
             wavelengths, intensities = self.readQEProFile(filePath)
             values = []
             for x,y in zip(wavelengths, intensities):
-                values.append("({0}, {1}, 'raw', 16, {2}, '{3}') ".format(x,y, sampleId, spectrumId))
+                values.append("({0}, {1}, 'raw', {2}, {3}, '{4}') ".format(x,y, wineId, sampleId, spectrumId))
 
             bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId) values" + ','.join(values)
             self.execute( bigStatement)
