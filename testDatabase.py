@@ -87,7 +87,7 @@ class TestBuildDatabase(unittest.TestCase):
         wavelengths, intensities = db.readQEProFile('originaldata/Q100.txt')
         self.assertEqual(len(intensities), 1044)
 
-    @unittest.skip("Done to fix a bad import, no need to redo")
+    # @unittest.skip("Done to fix a bad import, no need to redo")
     def testInsertAllSpectra(self):
         db = RamanDB()
         dataDir = 'originaldata'
@@ -98,19 +98,19 @@ class TestBuildDatabase(unittest.TestCase):
 
         db.insertSpectralDataFromFiles(filePaths)
 
-    @unittest.skip("Done, no need to redo.")
-    def testAddFileIdToDatabase(self):
-        db = RamanDB(writePermission=True)
-        db.execute("select * from files order by path")
-        records = db.fetchAll()
-        for i, record in enumerate(records):
-            db.execute("update files set fid={0} where md5='{1}'".format(i, record["md5"]))
+    def testInsertAllCorrectedSpectra(self):
+        db = RamanDB()
+        spectra, labels = db.getSpectraWithId(dataType='raw')
+        degree = 100
+        correctedSpectra = db.subtractFluorescence(spectra, polynomialDegree=degree)
 
-        db.execute("select spectra.md5, files.fid from spectra inner join files on files.md5 = spectra.md5")
-        records = db.fetchAll()
-        for i, record in enumerate(records):
-            statement = "update spectra set fid={0} where md5='{1}'".format(record["fid"], record["md5"])
-            db.execute(statement)
+        for i, label in enumerate(labels):
+            print("{0}/{1}".format(i, len(labels)))
+
+            match = re.search(r"(\d+)-(\d+)", label)
+            wineId = int(match.group(1))
+            sampleId = int(match.group(2))
+            db.insertSpectralData(db.wavelengths, correctedSpectra[:,i], 'fluorescence-corrected', wineId, sampleId, 'BaselineRemoval-nomask-degree{0}'.format(degree))
 
     @unittest.skip("done")
     def testBuildWineIdAndSampleId(self):

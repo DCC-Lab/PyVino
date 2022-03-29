@@ -80,12 +80,17 @@ class RamanDB(Database):
 
             print("Inserting {0}".format( filePath ))
             wavelengths, intensities = self.readQEProFile(filePath)
-            values = []
-            for x,y in zip(wavelengths, intensities):
-                values.append("({0}, {1}, 'raw', {2}, {3}, '{4}') ".format(x,y, wineId, sampleId, spectrumId))
+            self.insertSpectralData(wavelengths, intensities, 'test', wineId, sampleId)
 
-            bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId) values" + ','.join(values)
-            self.execute( bigStatement)
+    def insertSpectralData(self, wavelengths, intensities, dataType, wineId, sampleId, algorithm=None):
+        spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
+
+        values = []
+        for x,y in zip(wavelengths, intensities):
+            values.append("({0}, {1}, '{2}', {3}, {4}, '{5}', now(), '{6}') ".format(x,y, dataType, wineId, sampleId, spectrumId, algorithm))
+
+        bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId, dateAdded, algorithm) values" + ','.join(values)
+        self.execute( bigStatement)
 
     def getWavelengths(self):
         self.execute(r"select distinct(wavelength) from spectra where dataType='raw' order by wavelength")
@@ -193,15 +198,6 @@ class RamanDB(Database):
 
         return spectra, spectrumIdentifiers
 
-    def storeCorrectedSpectra(self):
-        spectra, spectrumIds = self.getSpectraWithId(dataType='raw')
-        correctedSpectra = self.subtractFluorescence(spectra)
-        for i in range( correctedSpectra.shape[1]):
-            spectrumId = spectrumIds[i]
-            print("Running for spectrum {0}".format(spectrumId))
-            for x,y in zip(self.wavelengths, correctedSpectra[:,i]):
-                # self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(?, ?, ?, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())", (x,y, spectrumId))
-                self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(%s, %s, %s, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())",(x, y, spectrumId))
     def subtractFluorescence(self, rawSpectra, polynomialDegree=5):
 
         """
