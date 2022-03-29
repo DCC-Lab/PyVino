@@ -11,7 +11,11 @@ class vinoPCA:
     def __init__(self):
         self.db = RamanDB()
         self.constraints = []
-        self.data, self.labels = self.db.getSpectraWithLabels()
+        self.data, self.labels = self.db.getSpectraWithId(dataType='raw')
+        self.correctedData, correctedLabel = self.db.getSpectraWithId(dataType='fluorescence-corrected')
+        if self.labels != correctedLabel:
+            raise ValueError('Not all spectra are corrected')
+
         self.wavelengths = self.db.getWavelengths()
 
         self.wavelengthMask = range(200, 1000)

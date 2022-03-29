@@ -4,26 +4,16 @@ import requests
 from BaselineRemoval import BaselineRemoval
 
 class RamanDB(Database):
-    url = 'https://www.dropbox.com/s/peowchyj7xyib4w/raman.db?dl=1'
-    def __init__(self, writePermission=False):  
+    def __init__(self):
         """
-        Creates the database object for Raman spectra.
-
-        The information as entered by people is here: https://docs.google.com/spreadsheets/d/1CgXRyIr7q3P26GP8Km4r9LuLH5o2APFj-4B72niTI1g/edit#gid=0
+        The Database is a MySQL database on cafeine called `raman`.
         """
-
-        self.databasePath = "raman.db"
-        if not os.path.exists(self.databasePath):
-            print("The raman.db file is not available. Atttempting to download from {0}".format(self.url))
-            filename = self.downloadDatabase()
-            if os.path.exists(filename) and not os.path.exists(self.databasePath):
-                os.rename(filename, self.databasePath)
-                print("Success. File has been renamed raman.db")                
+        url = "mysql://dcclab@cafeine2.crulrg.ulaval.ca/dcclab@raman"
 
         self._wavelengths = None
         self.progressStart = None
         self.constraints = []
-        super().__init__(self.databasePath, writePermission=writePermission)
+        super().__init__(url)
 
     def showHelp(self):
         print("""
@@ -64,7 +54,7 @@ class RamanDB(Database):
         return self._wavelengths
 
     def getWavelengths(self):
-        self.execute(r"select distinct(wavelength) from spectra order by wavelength")
+        self.execute(r"select distinct(wavelength) from spectra where dataType='raw' order by wavelength")
         rows = self.fetchAll()
         nTotal = len(rows)
 
@@ -117,7 +107,7 @@ class RamanDB(Database):
         return paths
 
     def getIntensities(self, limit=None):
-        return self.getSpectraWithWineId(limit=limit)
+        return self.getSpectraWithId(limit=limit)
 
     def getSpectraWithId(self, dataType=None, limit=None):
         possibleDataTypes = self.getDataTypes()
@@ -133,7 +123,7 @@ class RamanDB(Database):
         inner join files on files.spectrumId = spectra.spectrumId
         inner join wines on wines.wineId = files.wineId
         where dataType = '{0}'
-        order by files.path, wavelength """.format(dataType)
+        order by spectra.spectrumId, spectra.wavelength """.format(dataType)
 
         wavelengths = self.getWavelengths()
         nWavelengths = len(wavelengths)
@@ -160,14 +150,14 @@ class RamanDB(Database):
         return spectra, spectrumIdentifiers
 
     def storeCorrectedSpectra(self):
-        spectra, spectrumIds = self.getSpectraWithId()
+        spectra, spectrumIds = self.getSpectraWithId(dataType='raw')
         correctedSpectra = self.subtractFluorescence(spectra)
         for i in range( correctedSpectra.shape[1]):
             spectrumId = spectrumIds[i]
             print("Running for spectrum {0}".format(spectrumId))
             for x,y in zip(self.wavelengths, correctedSpectra[:,i]):
-                self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(?, ?, ?, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())", (x,y, spectrumId))
-
+                # self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(?, ?, ?, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())", (x,y, spectrumId))
+                self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(%s, %s, %s, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())",(x, y, spectrumId))
     def subtractFluorescence(self, rawSpectra, polynomialDegree=5):
 
         """

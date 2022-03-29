@@ -6,50 +6,66 @@ from ramandb import RamanDB
 import requests
 
 class TestBuildDatabase(unittest.TestCase):
-    def testDatabase(self):
+    def test01Database(self):
         db = RamanDB()
         self.assertIsNotNone(db)
-        self.assertTrue(os.path.exists(db.databasePath))
 
-    def testWavelengths(self):
+    def test02Wavelengths(self):
         db = RamanDB()
         self.assertIsNotNone(db.getWavelengths())
-        self.assertEqual(len(db.getWavelengths()), 1044)
 
-    def testWavelengthsProperty(self):
+    def test03WavelengthsAreUniqueAndCommon(self):
+        """
+        Check that all RAW spectra have the same number of wavelengths.
+        This is a complex SQL statement with a sub-select, but it returns 1 if true and 0 if false.
+        """
+        db = RamanDB()
+        db.execute("""
+        SELECT 
+        MAX(spectralPts) = MIN(spectralPts) as wavelengthsAreAllTheSame
+        FROM
+            (SELECT 
+                COUNT(wavelength) AS spectralPts
+            FROM
+                spectra
+            where dataType='raw'
+            GROUP BY wavelength) AS something;
+        """)
+        firstRecord = db.fetchOne()
+        self.assertEqual(firstRecord["wavelengthsAreAllTheSame"], 1)
+
+    def test04WavelengthsProperty(self):
         db = RamanDB()
         self.assertIsNotNone(db.wavelengths)
-        self.assertEqual(len(db.wavelengths), 1044)
 
-    def testFileCount(self):
+    def test05FileCount(self):
         db = RamanDB()
         self.assertIsNotNone(db.getFileCount())
-        self.assertEqual(db.getFileCount(), 709)
 
-    def testFilePaths(self):
+    def test06FileCountShouldMatchRawSpectraTimesWavelength(self):
+        """
+        NUmber of points in the spectra database for 'raw' spectra should be #wavelengths x #files
+        """
+        db = RamanDB()
+        rawSpectraCount = db.getFileCount()
+        wavelengthsCount = len(db.getWavelengths())
+
+        db.execute("select count(*) as count from spectra where dataType='raw'")
+        valueRecord = db.fetchOne()
+        self.assertEqual(valueRecord["count"], rawSpectraCount*wavelengthsCount)
+
+    def test07FilePaths(self):
         db = RamanDB()
         self.assertIsNotNone(db.getSpectraPaths())
         self.assertEqual(db.getFileCount(), len(db.getSpectraPaths()))
 
+    @unittest.skip("Ok, tested")
     def testGetIntensity(self):
         db = RamanDB()
         matrix, labels = db.getIntensities()
         self.assertIsNotNone(matrix)
         self.assertEqual(matrix.shape, (len(db.wavelengths), db.getFileCount()))
 
-    @unittest.skip("Ok, tested")
-    def testDownload(self):
-        url = 'https://www.dropbox.com/s/2st0sv7jpii6dz8/raman.db?dl=1'
-        r = requests.get(url, allow_redirects=True)
-        with open('test.db', 'wb') as file:
-            file.write(r.content)
-
-    @unittest.skip("Ok, tested")
-    def testDownload(self):
-        db = RamanDB()
-        filename = db.downloadDatabase()
-        self.assertTrue(os.path.exists(filename))
-        os.remove(filename)
 
     @unittest.skip("Done, no need to redo.")
     def testAddFileIdToDatabase(self):
@@ -76,28 +92,49 @@ class TestBuildDatabase(unittest.TestCase):
     def testWinesSummary(self):
         db = RamanDB()
         wineSummary = db.getWinesSummary()
-        print(wineSummary)
+        totalNumberOfSpectra = sum([ wine["nSamples"] for wine in wineSummary])
+
+        db.execute("select count(*) as count from spectra where dataType='raw'")
+        valueRecord = db.fetchOne()
+        self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(db.getWavelengths()))
 
     def testStoreCorrectedSpectra(self):
-        db = RamanDB(writePermission=False)
+        db = RamanDB()
         db.storeCorrectedSpectra()
 
+    def testSingleSpectrum(self):
+        db = RamanDB()
+        db.execute("select wavelength, intensity from spectra where spectrumId = '0002-0001'")
+        records = db.fetchAll()
+        for record in records:
+            print(record)
+
+    # def testStoreSingleSpectrum(self):
+    #     spectra, spectrumIds = self.getSpectraWithId(dataType='raw')
+    #     correctedSpectra = self.subtractFluorescence(spectra)
+    #     for i in range( correctedSpectra.shape[1]):
+    #         spectrumId = spectrumIds[i]
+    #         print("Running for spectrum {0}".format(spectrumId))
+    #         for x,y in zip(self.wavelengths, correctedSpectra[:,i]):
+    #             # self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(?, ?, ?, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())", (x,y, spectrumId))
+    #             self.execute("insert into spectra (wavelength, intensity, spectrumId, dataType, algorithm, dateAdded) values(%s, %s, %s, 'fluorescence-corrected', 'BaselineRemoval-degree5', datetime())",(x, y, spectrumId))
+
     def testDataTypes(self):
-        db = RamanDB(writePermission=False)
-        print(db.getDataTypes())
+        db = RamanDB()
+        self.assertTrue('raw' in db.getDataTypes())
 
     def testGetSpectraValidType(self):
-        db = RamanDB(writePermission=False)
+        db = RamanDB()
         spectra, spectrumIds = db.getSpectraWithId(dataType='raw')
         self.assertIsNotNone(spectra)
 
     def testGetSpectraValidTypeFluorescence(self):
-        db = RamanDB(writePermission=False)
+        db = RamanDB()
         spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
         self.assertIsNotNone(spectra)
 
     def testGetSpectraInvalidType(self):
-        db = RamanDB(writePermission=False)
+        db = RamanDB()
         with self.assertRaises(ValueError):
             spectra = db.getSpectraWithId(dataType='unknown')
 
