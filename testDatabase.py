@@ -146,6 +146,8 @@ class TestBuildDatabase(unittest.TestCase):
         if 'fluorescence-corrected' in db.getDataTypes():
             spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
             self.assertIsNotNone(spectra)
+        else:
+            self.skipTest("No background-corrected spectra in database")
 
     def testGetSpectraInvalidType(self):
         db = RamanDB()
