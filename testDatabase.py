@@ -88,27 +88,15 @@ class TestBuildDatabase(unittest.TestCase):
         self.assertEqual(len(intensities), 1044)
 
     @unittest.skip("Done to fix a bad import, no need to redo")
-    def testInsertQSpectra(self):
+    def testInsertAllSpectra(self):
         db = RamanDB()
-
         dataDir = 'originaldata'
-        filePaths = os.listdir(dataDir)
-        for filename in filePaths:
-            match = re.search(r'Q(\d+)', filename)
-            if match is None:
-                continue
-            filePath = os.path.join(dataDir, filename)
-            print("Inserting {0}".format( filePath ))
-            sampleId = int(match.group(1))
-            spectrumId = "0016-{0:04d}".format(sampleId)
+        filenames = os.listdir(dataDir)
+        filePaths = []
+        for filename in filenames:
+            filePaths.append(os.path.join(dataDir, filename))
 
-            wavelengths, intensities = db.readQEProFile(filePath)
-            values = []
-            for x,y in zip(wavelengths, intensities):
-                values.append("({0}, {1}, 'raw', 16, {2}, '{3}') ".format(x,y, sampleId, spectrumId))
-
-            bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId) values" + ','.join(values)
-            db.execute( bigStatement)
+        db.insertSpectralDataFromFiles(filePaths)
 
     @unittest.skip("Done, no need to redo.")
     def testAddFileIdToDatabase(self):
@@ -141,6 +129,7 @@ class TestBuildDatabase(unittest.TestCase):
         valueRecord = db.fetchOne()
         self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(db.getWavelengths()))
 
+    @unittest.skip("Not ready")
     def testStoreCorrectedSpectra(self):
         db = RamanDB()
         db.storeCorrectedSpectra()
@@ -165,11 +154,6 @@ class TestBuildDatabase(unittest.TestCase):
     def testDataTypes(self):
         db = RamanDB()
         self.assertTrue('raw' in db.getDataTypes())
-
-    def testGetSpectraValidType(self):
-        db = RamanDB()
-        spectra, spectrumIds = db.getSpectraWithId(dataType='raw')
-        self.assertIsNotNone(spectra)
 
     def testGetSpectraValidTypeFluorescence(self):
         db = RamanDB()

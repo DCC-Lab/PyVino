@@ -68,6 +68,25 @@ class RamanDB(Database):
                 # print("Line does not match: {0}".format(line))
         return wavelengths, intensities
 
+    def insertSpectralDataFromFiles(self, filePaths):
+        for filePath in filePaths:
+            match = re.search(r'([A-Z]{1,2})_?(\d{1,3})\.', filePath)
+            if match is None:
+                raise ValueError("The file does not appear to have a valid name: {0}".format(filePath))
+
+            wineId = int(ord(match.group(1))-ord('A'))
+            sampleId = int(match.group(2))
+            spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
+
+            print("Inserting {0}".format( filePath ))
+            wavelengths, intensities = self.readQEProFile(filePath)
+            values = []
+            for x,y in zip(wavelengths, intensities):
+                values.append("({0}, {1}, 'raw', 16, {2}, '{3}') ".format(x,y, sampleId, spectrumId))
+
+            bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId) values" + ','.join(values)
+            self.execute( bigStatement)
+
     def getWavelengths(self):
         self.execute(r"select distinct(wavelength) from spectra where dataType='raw' order by wavelength")
         rows = self.fetchAll()
