@@ -39,6 +39,24 @@ class RamanDB(Database):
         else:
             self.cursor.execute(statement, bindings)
 
+    def executeCount(self, statement, bindings=None):
+        """
+        This function with "bindings" is necessary to handle binary data: it cannot be inserted with a string statement.
+        The bindings are explained here: https://zetcode.com/db/sqlitepythontutorial/ and are similar to .format()
+        but are handled properly by the sqlite3 module instead of a python string. Without it, binary data
+        is inserted as a string, which is not good.
+
+        See insertFileContentIntoSources() for an example.
+
+        """
+        self.execute(statement, bindings)
+        singleRecord = self.fetchOne()
+        keys = list(singleRecord.keys())
+        if len(keys) == 1:
+            return int(singleRecord[keys[0]])
+        else:
+            return None
+
     @property
     def wavelengths(self):
         if self._wavelengths is None:
@@ -68,7 +86,8 @@ class RamanDB(Database):
                 # print("Line does not match: {0}".format(line))
         return wavelengths, intensities
 
-    def insertSpectralDataFromFiles(self, filePaths):
+    def insertSpectralDataFromFiles(self, filePaths, dataType='raw'):
+        inserted = 0
         for filePath in filePaths:
             match = re.search(r'([A-Z]{1,2})_?(\d{1,3})\.', filePath)
             if match is None:
@@ -78,16 +97,26 @@ class RamanDB(Database):
             sampleId = int(match.group(2))
             spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
 
-            print("Inserting {0}".format( filePath ))
             wavelengths, intensities = self.readQEProFile(filePath)
-            self.insertSpectralData(wavelengths, intensities, 'test', wineId, sampleId)
+            try:
+                self.insertSpectralData(wavelengths, intensities, dataType, wineId, sampleId)
+                print("Inserted {0}".format(filePath))
+                inserted += 1
+            except ValueError as err:
+                print(err)
+
+        return inserted
 
     def insertSpectralData(self, wavelengths, intensities, dataType, wineId, sampleId, algorithm=None):
         spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
 
+        count = self.executeCount('select count(*) as count from spectra where spectrumId = "{0}" and dataType = "{1}"'.format(spectrumId, dataType))
+        if count != 0 :
+            raise ValueError("Spectrum {0} already exists with dataType='{1}'".format(spectrumId, dataType))
+
         values = []
         for x,y in zip(wavelengths, intensities):
-            values.append("({0}, {1}, '{2}', {3}, {4}, '{5}', now(), '{6}') ".format(x,y, dataType, wineId, sampleId, spectrumId, algorithm))
+            values.append("({0}, {1}, '{2}', {3}, {4}, '{5}', now(), '{6}') ".format(x,float(y), dataType, wineId, sampleId, spectrumId, algorithm))
 
         bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId, dateAdded, algorithm) values" + ','.join(values)
         self.execute( bigStatement)
@@ -104,7 +133,7 @@ class RamanDB(Database):
         return wavelengths
 
     def getDataTypes(self):
-        self.execute('select dataType from spectra group by dataType')
+        self.execute('select distinct dataType from spectra')
         rows = self.fetchAll()
         dataTypes = []
         for row in rows:
@@ -145,6 +174,53 @@ class RamanDB(Database):
             paths.append(row['path'])
         return paths
 
+    def getSpectrum(self, dataType, spectrumId):
+        whereConstraints = []
+        possibleDataTypes = self.getDataTypes()
+
+        if dataType is None:
+            dataType = 'raw'
+        if dataType not in possibleDataTypes:
+            raise ValueError('Possible dataTypes are {0}'.format(possibleDataTypes))
+        whereConstraints.append("dataType = '{0}'".format(dataType))
+
+        whereConstraints.append("spectrumId = '{0}'".format(spectrumId))
+
+        if len(whereConstraints) != 0:
+            whereClause = "where " + " and ".join(whereConstraints)
+        else:
+            whereClause = ""
+
+        stmnt = """
+        select wavelength, intensity, spectra.spectrumId from spectra
+        {0} 
+        order by spectra.spectrumId, spectra.wavelength """.format(whereClause )
+
+        wavelengths = self.getWavelengths()
+        nWavelengths = len(wavelengths)
+
+        self.execute(stmnt)
+
+        rows = []
+        row = self.fetchOne()
+        while row is not None:
+            rows.append(row)
+            if len(rows) % 100 == 0:
+                print(".", end='')
+            row = self.fetchOne()
+
+        nSamples = len(rows)//nWavelengths
+        if nSamples == 0:
+            return None
+
+        spectra = np.zeros(shape=(nWavelengths, nSamples))
+        spectrumIdentifiers = [""]*nSamples
+        for i,row in enumerate(rows):
+            spectra[i%nWavelengths, i//nWavelengths] = float(row['intensity'])
+            spectrumIdentifiers[i//nWavelengths] = row['spectrumId']
+
+        return spectra, spectrumIdentifiers
+
     def getSpectraWithId(self, dataType=None, color=None, limit=None):
         whereConstraints = []
         possibleDataTypes = self.getDataTypes()
@@ -156,7 +232,7 @@ class RamanDB(Database):
         whereConstraints.append("dataType = '{0}'".format(dataType))
 
         if color is not None:
-            whereConstraints.append("color = '{0}'".format(color))
+            whereConstraints.append(' wineId in (select wineId from wines where color="{0}") '.format(color))
 
         if len(whereConstraints) != 0:
             whereClause = "where " + " and ".join(whereConstraints)
@@ -164,10 +240,9 @@ class RamanDB(Database):
             whereClause = ""
 
         stmnt = """
-        select wavelength, intensity, spectra.spectrumId, wines.* from spectra 
-        inner join files on files.spectrumId = spectra.spectrumId
-        inner join wines on wines.wineId = spectra.wineId
-        {0}
+        select wavelength, intensity, spectra.spectrumId 
+            from spectra
+            {0}
         order by spectra.spectrumId, spectra.wavelength """.format(whereClause )
 
         wavelengths = self.getWavelengths()

@@ -6,7 +6,7 @@ from ramandb import RamanDB
 import requests
 import re
 
-class TestBuildDatabase(unittest.TestCase):
+class TestRamanDatabase(unittest.TestCase):
     def test01Database(self):
         db = RamanDB()
         self.assertIsNotNone(db)
@@ -87,7 +87,6 @@ class TestBuildDatabase(unittest.TestCase):
         wavelengths, intensities = db.readQEProFile('originaldata/Q100.txt')
         self.assertEqual(len(intensities), 1044)
 
-    # @unittest.skip("Done to fix a bad import, no need to redo")
     def testInsertAllSpectra(self):
         db = RamanDB()
         dataDir = 'originaldata'
@@ -96,21 +95,28 @@ class TestBuildDatabase(unittest.TestCase):
         for filename in filenames:
             filePaths.append(os.path.join(dataDir, filename))
 
-        db.insertSpectralDataFromFiles(filePaths)
+        inserted = db.insertSpectralDataFromFiles(filePaths)
+        if inserted == 0:
+            self.skipTest("Nothing was inserted")
+
+    def testExecuteCount(self):
+        db = RamanDB()
+        self.assertTrue(db.executeCount("select count(*) as count from spectra") > 0)
 
     def testInsertAllCorrectedSpectra(self):
         db = RamanDB()
-        spectra, labels = db.getSpectraWithId(dataType='raw')
-        degree = 100
-        correctedSpectra = db.subtractFluorescence(spectra, polynomialDegree=degree)
-
-        for i, label in enumerate(labels):
-            print("{0}/{1}".format(i, len(labels)))
-
-            match = re.search(r"(\d+)-(\d+)", label)
+        db.execute("select distinct spectrumId from spectra")
+        records = db.fetchAll()
+        for record in records:
+            spectrumId = record["spectrumId"]
+            spectrum, labels = db.getSpectrum(dataType='raw', spectrumId=spectrumId)
+            degree = 100
+            correctedSpectrum = db.subtractFluorescence(spectrum, polynomialDegree=degree)
+            print(spectrumId)
+            match = re.search(r"(\d+)-(\d+)", spectrumId)
             wineId = int(match.group(1))
             sampleId = int(match.group(2))
-            db.insertSpectralData(db.wavelengths, correctedSpectra[:,i], 'fluorescence-corrected', wineId, sampleId, 'BaselineRemoval-nomask-degree{0}'.format(degree))
+            db.insertSpectralData(db.wavelengths, correctedSpectrum[:,:], 'fluorescence-corrected', wineId, sampleId, 'BaselineRemoval-nomask-degree{0}'.format(degree))
 
     @unittest.skip("done")
     def testBuildWineIdAndSampleId(self):
@@ -124,11 +130,6 @@ class TestBuildDatabase(unittest.TestCase):
         db.execute("select count(*) as count from spectra where dataType='raw'")
         valueRecord = db.fetchOne()
         self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(db.getWavelengths()))
-
-    @unittest.skip("This function is not ready")
-    def testStoreCorrectedSpectra(self):
-        db = RamanDB()
-        db.storeCorrectedSpectra()
 
     def testSingleSpectrum(self):
         db = RamanDB()
