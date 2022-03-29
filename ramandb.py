@@ -39,19 +39,34 @@ class RamanDB(Database):
         else:
             self.cursor.execute(statement, bindings)
 
-    def downloadDatabase(self):
-        r = requests.get(self.url, allow_redirects=True)
-        filename = "raman-download.db"
-        with open(filename, 'wb') as file:
-            file.write(r.content)
-        return filename
-
     @property
     def wavelengths(self):
         if self._wavelengths is None:
             self._wavelengths = self.getWavelengths()
 
         return self._wavelengths
+
+    def readQEProFile(self, filePath):
+        # text_file = open(filePath, "br")
+        # hash = hashlib.md5(text_file.read()).hexdigest()
+        # text_file.close()
+
+        text_file = open(filePath, "r")
+        lines = text_file.read().splitlines()
+
+        wavelengths = []
+        intensities = []
+        for line in lines:
+            match = re.match(r'^\s*(\d+\.?\d+)\s+(-?\d*\.?\d*)', line)
+            if match is not None:
+                intensity = match.group(2)
+                wavelength = match.group(1)
+                wavelengths.append(wavelength)
+                intensities.append(intensity)
+            else:
+                pass
+                # print("Line does not match: {0}".format(line))
+        return wavelengths, intensities
 
     def getWavelengths(self):
         self.execute(r"select distinct(wavelength) from spectra where dataType='raw' order by wavelength")
@@ -73,7 +88,7 @@ class RamanDB(Database):
 
         return dataTypes
 
-    def getIdentifiers(self):
+    def getWineIds(self):
         self.execute(r"select count(*) as count, wineId as id from files group by wineId order by wineId;")
         rows = self.fetchAll()
         identifiers = {}
@@ -106,24 +121,30 @@ class RamanDB(Database):
             paths.append(row['path'])
         return paths
 
-    def getIntensities(self, limit=None):
-        return self.getSpectraWithId(limit=limit)
-
-    def getSpectraWithId(self, dataType=None, limit=None):
+    def getSpectraWithId(self, dataType=None, color=None, limit=None):
+        whereConstraints = []
         possibleDataTypes = self.getDataTypes()
 
         if dataType is None:
             dataType = 'raw'
-
         if dataType not in possibleDataTypes:
             raise ValueError('Possible dataTypes are {0}'.format(possibleDataTypes))
+        whereConstraints.append("dataType = '{0}'".format(dataType))
+
+        if color is not None:
+            whereConstraints.append("color = '{0}'".format(color))
+
+        if len(whereConstraints) != 0:
+            whereClause = "where " + " and ".join(whereConstraints)
+        else:
+            whereClause = ""
 
         stmnt = """
         select wavelength, intensity, spectra.spectrumId, wines.* from spectra 
         inner join files on files.spectrumId = spectra.spectrumId
-        inner join wines on wines.wineId = files.wineId
-        where dataType = '{0}'
-        order by spectra.spectrumId, spectra.wavelength """.format(dataType)
+        inner join wines on wines.wineId = spectra.wineId
+        {0}
+        order by spectra.spectrumId, spectra.wavelength """.format(whereClause )
 
         wavelengths = self.getWavelengths()
         nWavelengths = len(wavelengths)
@@ -132,11 +153,15 @@ class RamanDB(Database):
             stmnt += " limit {0}".format(limit*nWavelengths)
 
         self.execute(stmnt)
-        rows = list(self.fetchAll())
 
-        if rows is None:
-            return None
-            
+        rows = []
+        row = self.fetchOne()
+        while row is not None:
+            rows.append(row)
+            if len(rows) % 100 == 0:
+                print(".", end='')
+            row = self.fetchOne()
+
         nSamples = len(rows)//nWavelengths
         if nSamples == 0:
             return None

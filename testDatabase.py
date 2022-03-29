@@ -4,6 +4,7 @@ from dcclab import Database
 import os
 from ramandb import RamanDB
 import requests
+import re
 
 class TestBuildDatabase(unittest.TestCase):
     def test01Database(self):
@@ -59,13 +60,55 @@ class TestBuildDatabase(unittest.TestCase):
         self.assertIsNotNone(db.getSpectraPaths())
         self.assertEqual(db.getFileCount(), len(db.getSpectraPaths()))
 
-    @unittest.skip("Ok, tested")
-    def testGetIntensity(self):
+    def test08GetWhiteSpectra(self):
         db = RamanDB()
-        matrix, labels = db.getIntensities()
-        self.assertIsNotNone(matrix)
-        self.assertEqual(matrix.shape, (len(db.wavelengths), db.getFileCount()))
+        db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'white'")
+        firstRecord = db.fetchOne()
+        whiteWineFileCount = firstRecord["count"]
 
+        matrix, labels = db.getSpectraWithId(dataType='raw', color='white')
+        self.assertIsNotNone(matrix)
+
+        self.assertEqual(matrix.shape, (len(db.wavelengths), whiteWineFileCount))
+
+    def test09GetRedSpectra(self):
+        db = RamanDB()
+        db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'red'")
+        firstRecord = db.fetchOne()
+        redWineFileCount = firstRecord["count"]
+
+        matrix, labels = db.getSpectraWithId(dataType='raw', color='red')
+        self.assertIsNotNone(matrix)
+
+        self.assertEqual(matrix.shape, (len(db.wavelengths), redWineFileCount))
+
+    def testReadQEProFile(self):
+        db = RamanDB()
+        wavelengths, intensities = db.readQEProFile('originaldata/Q100.txt')
+        self.assertEqual(len(intensities), 1044)
+
+    @unittest.skip("Done to fix a bad import, no need to redo")
+    def testInsertQSpectra(self):
+        db = RamanDB()
+
+        dataDir = 'originaldata'
+        filePaths = os.listdir(dataDir)
+        for filename in filePaths:
+            match = re.search(r'Q(\d+)', filename)
+            if match is None:
+                continue
+            filePath = os.path.join(dataDir, filename)
+            print("Inserting {0}".format( filePath ))
+            sampleId = int(match.group(1))
+            spectrumId = "0016-{0:04d}".format(sampleId)
+
+            wavelengths, intensities = db.readQEProFile(filePath)
+            values = []
+            for x,y in zip(wavelengths, intensities):
+                values.append("({0}, {1}, 'raw', 16, {2}, '{3}') ".format(x,y, sampleId, spectrumId))
+
+            bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId) values" + ','.join(values)
+            db.execute( bigStatement)
 
     @unittest.skip("Done, no need to redo.")
     def testAddFileIdToDatabase(self):
