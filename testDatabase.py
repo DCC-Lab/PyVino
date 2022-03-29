@@ -105,8 +105,11 @@ class TestRamanDatabase(unittest.TestCase):
 
     def testInsertAllCorrectedSpectra(self):
         db = RamanDB()
-        db.execute("select distinct spectrumId from spectra")
+        db.execute("select distinct spectrumId from spectra where spectrumId not in (select spectrumId from spectra where dataType='fluorescence-corrected')")
         records = db.fetchAll()
+        if len(records) == 0:
+            self.skipTest("All corrected spectra exist in the database")
+
         for record in records:
             spectrumId = record["spectrumId"]
             spectrum, labels = db.getSpectrum(dataType='raw', spectrumId=spectrumId)
