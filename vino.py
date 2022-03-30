@@ -18,7 +18,7 @@ class vinoPCA:
 
         self.wavelengths = self.db.getWavelengths()
 
-        self.wavelengthMask = range(200, 1000)
+        self.wavelengthMask = self.db.wavelengthMask
         self.data = self.data[self.wavelengthMask, :]
         self.wavelengths = self.wavelengths[self.wavelengthMask]
 
