@@ -47,6 +47,7 @@ class TestVInoClass(unittest.TestCase):
         my_Spectrums.showTransformedData2D()
         my_Spectrums.showTransformedData1D()
         my_Spectrums.showEigenvectors()
+        my_Spectrums.plotScreeValues()
 
     def testvinoPCANoArgument(self):
         my_Spectrums = vinoPCA()
@@ -57,11 +58,12 @@ class TestVInoClass(unittest.TestCase):
         my_Spectrums.showTransformedData2D()
         my_Spectrums.showTransformedData1D()
         my_Spectrums.showEigenvectors()
+        my_Spectrums.plotScreeValues()
 
     # def testInitDB(self):
     #     self.assertIsNotNone(vinoPCA().db)
 
-    @unittest.skip("Trop long")
+    @unittest.skip("Does not work because of getIntensities")
     def testColormap(self):
         vino = vinoPCA()
         cm = vino.getColorMap()

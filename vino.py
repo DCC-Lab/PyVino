@@ -172,8 +172,18 @@ class vinoPCA:
         Creat a scree plot with the eigenvectors
         :return: None
         """
+        varianceRatio = self.pca.explained_variance_ratio_
+        numberOfPC = list(range(1, len(self.pca.explained_variance_ratio_)+1))
 
-        pass
+        fig, ax = plt.subplots()
+        ax.bar(numberOfPC, varianceRatio)
+        ax.set_xlabel('PC number')
+        ax.set_ylabel('Explained variance ratio')
+        ax.set_title('Scree plot')
+        plt.xticks(numberOfPC)
+        for bars in ax.containers:
+            ax.bar_label(bars, fmt='%.4f', fontsize=8)
+        plt.show()
 
 
 if __name__ == "__main__":
