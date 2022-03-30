@@ -7,21 +7,25 @@ import requests
 import re
 
 class TestRamanDatabase(unittest.TestCase):
+    def setUp(self):
+        self.db = RamanDB()
+        # self.db = RamanDB("mysql://127.0.0.1/root@raman")
+        self.assertIsNotNone(self.db)
+
+    @unittest.skip("Now in setUp")
     def test01Database(self):
-        db = RamanDB()
-        self.assertIsNotNone(db)
+        self.db = RamanDB()
+        self.assertIsNotNone(self.db)
 
     def test02Wavelengths(self):
-        db = RamanDB()
-        self.assertIsNotNone(db.getWavelengths())
+        self.assertIsNotNone(self.db.getWavelengths())
 
     def test03WavelengthsAreUniqueAndCommon(self):
         """
         Check that all RAW spectra have the same number of wavelengths.
         This is a complex SQL statement with a sub-select, but it returns 1 if true and 0 if false.
         """
-        db = RamanDB()
-        db.execute("""
+        self.db.execute("""
         SELECT 
         MAX(spectralPts) = MIN(spectralPts) as wavelengthsAreAllTheSame
         FROM
@@ -32,131 +36,132 @@ class TestRamanDatabase(unittest.TestCase):
             where dataType='raw'
             GROUP BY wavelength) AS something;
         """)
-        firstRecord = db.fetchOne()
+        firstRecord = self.db.fetchOne()
         self.assertEqual(firstRecord["wavelengthsAreAllTheSame"], 1)
 
     def test04WavelengthsProperty(self):
-        db = RamanDB()
-        self.assertIsNotNone(db.wavelengths)
+        self.assertIsNotNone(self.db.wavelengths)
 
     def test05FileCount(self):
-        db = RamanDB()
-        self.assertIsNotNone(db.getFileCount())
+        self.assertIsNotNone(self.db.getFileCount())
 
     def test06FileCountShouldMatchRawSpectraTimesWavelength(self):
         """
         NUmber of points in the spectra database for 'raw' spectra should be #wavelengths x #files
         """
-        db = RamanDB()
-        rawSpectraCount = db.getFileCount()
-        wavelengthsCount = len(db.getWavelengths())
+        rawSpectraCount = self.db.getFileCount()
+        wavelengthsCount = len(self.db.getWavelengths())
 
-        db.execute("select count(*) as count from spectra where dataType='raw'")
-        valueRecord = db.fetchOne()
+        self.db.execute("select count(*) as count from spectra where dataType='raw'")
+        valueRecord = self.db.fetchOne()
         self.assertEqual(valueRecord["count"], rawSpectraCount*wavelengthsCount)
 
     def test07FilePaths(self):
-        db = RamanDB()
-        self.assertIsNotNone(db.getSpectraPaths())
-        self.assertEqual(db.getFileCount(), len(db.getSpectraPaths()))
+        self.assertIsNotNone(self.db.getSpectraPaths())
+        self.assertEqual(self.db.getFileCount(), len(self.db.getSpectraPaths()))
 
     def test08GetWhiteSpectra(self):
-        db = RamanDB()
-        db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'white'")
-        firstRecord = db.fetchOne()
+        self.db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'white'")
+        firstRecord = self.db.fetchOne()
         whiteWineFileCount = firstRecord["count"]
 
-        matrix, labels = db.getSpectraWithId(dataType='raw', color='white')
+        matrix, labels = self.db.getSpectraWithId(dataType='raw', color='white')
         self.assertIsNotNone(matrix)
 
-        self.assertEqual(matrix.shape, (len(db.wavelengths), whiteWineFileCount))
+        self.assertEqual(matrix.shape, (len(self.db.wavelengths), whiteWineFileCount))
 
     def test09GetRedSpectra(self):
-        db = RamanDB()
-        db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'red'")
-        firstRecord = db.fetchOne()
+        self.db.execute("select count(*) as count from files inner join wines on wines.wineId = files.wineId where wines.color = 'red'")
+        firstRecord = self.db.fetchOne()
         redWineFileCount = firstRecord["count"]
 
-        matrix, labels = db.getSpectraWithId(dataType='raw', color='red')
+        matrix, labels = self.db.getSpectraWithId(dataType='raw', color='red')
         self.assertIsNotNone(matrix)
 
-        self.assertEqual(matrix.shape, (len(db.wavelengths), redWineFileCount))
+        self.assertEqual(matrix.shape, (len(self.db.wavelengths), redWineFileCount))
 
-    def testReadQEProFile(self):
-        db = RamanDB()
-        wavelengths, intensities = db.readQEProFile('originaldata/Q100.txt')
+    def test10ReadQEProFile(self):
+        wavelengths, intensities = self.db.readQEProFile('originaldata/Q100.txt')
         self.assertEqual(len(intensities), 1044)
 
-    def testInsertAllSpectra(self):
-        db = RamanDB()
+    def test11InsertAllSpectra(self):
         dataDir = 'originaldata'
         filenames = os.listdir(dataDir)
         filePaths = []
         for filename in filenames:
             filePaths.append(os.path.join(dataDir, filename))
 
-        inserted = db.insertSpectralDataFromFiles(filePaths)
+        inserted = self.db.insertSpectralDataFromFiles(filePaths)
         if inserted == 0:
             self.skipTest("Nothing was inserted")
 
-    def testExecuteCount(self):
-        db = RamanDB()
-        self.assertTrue(db.executeCount("select count(*) as count from spectra") > 0)
+    def test12ExecuteCount(self):
+        self.assertTrue(self.db.executeCount("select count(*) as count from spectra") > 0)
 
-    def testInsertAllCorrectedSpectra(self):
-        db = RamanDB()
-        db.execute("select distinct spectrumId from spectra where spectrumId not in (select spectrumId from spectra where dataType='fluorescence-corrected')")
-        records = db.fetchAll()
+    def test13InsertAllCorrectedSpectra(self):
+        self.db.execute("select distinct spectrumId from spectra where dataType='raw' and spectrumId not in (select spectrumId from spectra where dataType='fluorescence-corrected')")
+        records = self.db.fetchAll()
         if len(records) == 0:
             self.skipTest("All corrected spectra exist in the database")
 
         for record in records:
             spectrumId = record["spectrumId"]
-            spectrum, labels = db.getSpectrum(dataType='raw', spectrumId=spectrumId)
+            spectrum, labels = self.db.getSpectrum(dataType='raw', spectrumId=spectrumId)
             degree = 100
-            correctedSpectrum = db.subtractFluorescence(spectrum, polynomialDegree=degree)
+            correctedSpectrum = self.db.subtractFluorescence(spectrum, polynomialDegree=degree)
             print(spectrumId)
             match = re.search(r"(\d+)-(\d+)", spectrumId)
             wineId = int(match.group(1))
             sampleId = int(match.group(2))
-            db.insertSpectralData(db.wavelengths, correctedSpectrum[:,:], 'fluorescence-corrected', wineId, sampleId, 'BaselineRemoval-nomask-degree{0}'.format(degree))
+            self.db.insertSpectralData(self.db.wavelengths, correctedSpectrum[:,:], 'fluorescence-corrected', wineId, sampleId, 'BaselineRemoval-nomask-degree{0}'.format(degree))
 
     @unittest.skip("done")
-    def testBuildWineIdAndSampleId(self):
-        db.execute('update files set sampleId=substr(path,18,2) where path like "%\_%" ESCAPE "\"')
+    def test14BuildWineIdAndSampleId(self):
+        self.db.execute('update files set sampleId=substr(path,18,2) where path like "%\_%" ESCAPE "\"')
 
-    def testWinesSummary(self):
-        db = RamanDB()
-        wineSummary = db.getWinesSummary()
+    def test15WinesSummary(self):
+        wineSummary = self.db.getWinesSummary()
         totalNumberOfSpectra = sum([ wine["nSamples"] for wine in wineSummary])
 
-        db.execute("select count(*) as count from spectra where dataType='raw'")
-        valueRecord = db.fetchOne()
-        self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(db.getWavelengths()))
+        self.db.execute("select count(*) as count from spectra where dataType='raw'")
+        valueRecord = self.db.fetchOne()
+        self.assertEqual(valueRecord["count"], totalNumberOfSpectra*len(self.db.getWavelengths()))
 
-    def testSingleSpectrum(self):
-        db = RamanDB()
-        db.execute("select wavelength, intensity from spectra where spectrumId = '0002-0001'")
-        records = db.fetchAll()
+    def test16SingleSpectrum(self):
+        self.db.execute("select wavelength, intensity from spectra where spectrumId = '0002-0001'")
+        records = self.db.fetchAll()
         for record in records:
             print(record)
 
-    def testDataTypes(self):
-        db = RamanDB()
-        self.assertTrue('raw' in db.getDataTypes())
+    def test17DataTypes(self):
+        self.assertTrue('raw' in self.db.getDataTypes())
 
-    def testGetSpectraValidTypeFluorescence(self):
-        db = RamanDB()
-        if 'fluorescence-corrected' in db.getDataTypes():
-            spectra, spectrumIds = db.getSpectraWithId(dataType='fluorescence-corrected')
+    def test18GetSpectraValidTypeFluorescence(self):
+        if 'fluorescence-corrected' in self.db.getDataTypes():
+            spectra, spectrumIds = self.db.getSpectraWithId(dataType='fluorescence-corrected')
             self.assertIsNotNone(spectra)
         else:
             self.skipTest("No background-corrected spectra in database")
 
-    def testGetSpectraInvalidType(self):
-        db = RamanDB()
+    def test19GetSpectraInvalidType(self):
         with self.assertRaises(ValueError):
-            spectra = db.getSpectraWithId(dataType='unknown')
+            spectra = self.db.getSpectraWithId(dataType='unknown')
+
+    def test20DatabaseMySQLLocal(self):
+        db = RamanDB("mysql://127.0.0.1/root@raman")
+        self.assertIsNotNone(db)
+        self.assertIsNotNone(db.getWavelengths())
+
+    def test21Wavenumbers(self):
+        print(self.db.wavenumbers)
+
+    def test22Mask(self):
+        print(sum(self.db.wavelengthMask))
+        maskRange = []
+        for i, mask in enumerate(self.db.wavelengthMask):
+            if mask:
+                maskRange.append(i)
+        print(self.db.wavelengths[maskRange])
 
 if __name__ == "__main__":
     unittest.main()

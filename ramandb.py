@@ -1,19 +1,27 @@
+import dcclab
 from dcclab.database import *
 import numpy as np
 import requests
 from BaselineRemoval import BaselineRemoval
+import re
 
-class RamanDB(Database):
-    def __init__(self):
+class RamanDB(dcclab.database.Database):
+    def __init__(self, databaseURL = None):
         """
         The Database is a MySQL database on cafeine called `raman`.
         """
-        url = "mysql://dcclab@cafeine2.crulrg.ulaval.ca/dcclab@raman"
+        if databaseURL is None:
+            databaseURL = "mysql://dcclab@cafeine2.crulrg.ulaval.ca/dcclab@raman"
 
         self._wavelengths = None
+        self._wavelengthMask = None
         self.progressStart = None
         self.constraints = []
-        super().__init__(url)
+        self.pumpWavelengthInNm = 785
+        super().__init__(databaseURL)
+
+        if dcclab.__version__ < "1.0.3":
+            print("You should update PyDCCLab with `pip install dcclab` to get the latest version.")
 
     def showHelp(self):
         print("""
@@ -57,6 +65,22 @@ class RamanDB(Database):
         else:
             return None
 
+    def parseURL(self, url):
+        #mysql://sshusername:sshpassword@cafeine2.crulrg.ulaval.ca/mysqlusername:mysqlpassword@questions
+        if dcclab.__version__ >= "1.0.4":
+            print("No need to patch parseURL in this dcclab version")
+
+        match = re.search("(mysql)://(.*?)@?([^@]+?)/(.*?)@(.+)", url)
+        if match is not None:
+            protocol = Engine.mysql
+            sshuser = match.group(2)
+            host = match.group(3)
+            mysqluser = match.group(4)
+            database = match.group(5)
+            return (protocol, sshuser, host, mysqluser, database)
+        else:
+            return (Engine.sqlite3, None, "127.0.0.1", None, url)
+
     @property
     def wavelengths(self):
         if self._wavelengths is None:
@@ -64,26 +88,54 @@ class RamanDB(Database):
 
         return self._wavelengths
 
+    @property
+    def wavenumbers(self):
+        return 1e7*(1.0/self.pumpWavelengthInNm - 1.0/self.wavelengths)
+
+    @property
+    def wavelengthMask(self):
+        if self._wavelengthMask is None:
+            self._wavelengthMask = self.getWavelengthMask()
+
+        return self._wavelengthMask
+
+    def getWavelengthMask(self):
+        self.execute(r"select distinct(wavelength), intensity from spectra where dataType='mask-wine' order by wavelength")
+        rows = self.fetchAll()
+        nTotal = len(rows)
+
+        if nTotal != 0:
+            mask = np.zeros(shape=(nTotal),dtype=bool)
+            for i,row in enumerate(rows):
+                mask[i] = bool(row['intensity'])
+        else:
+            mask = np.zeros(shape=(len(self.wavelengths)))
+            for i in range(200, 1000):
+                mask[i] = True
+            self.insertSpectralData(wavelengths=self.wavelengths, intensities=mask, dataType='mask-wine', wineId=None, sampleId=None, algorithm='BaselineRemoval')
+
+        return mask
+
     def readQEProFile(self, filePath):
         # text_file = open(filePath, "br")
         # hash = hashlib.md5(text_file.read()).hexdigest()
         # text_file.close()
 
-        text_file = open(filePath, "r")
-        lines = text_file.read().splitlines()
+        with open(filePath, "r") as text_file:
+            lines = text_file.read().splitlines()
 
-        wavelengths = []
-        intensities = []
-        for line in lines:
-            match = re.match(r'^\s*(\d+\.?\d+)\s+(-?\d*\.?\d*)', line)
-            if match is not None:
-                intensity = match.group(2)
-                wavelength = match.group(1)
-                wavelengths.append(wavelength)
-                intensities.append(intensity)
-            else:
-                pass
-                # print("Line does not match: {0}".format(line))
+            wavelengths = []
+            intensities = []
+            for line in lines:
+                match = re.match(r'^\s*(\d+\.?\d+)\s+(-?\d*\.?\d*)', line)
+                if match is not None:
+                    intensity = match.group(2)
+                    wavelength = match.group(1)
+                    wavelengths.append(wavelength)
+                    intensities.append(intensity)
+                else:
+                    pass
+                    # print("Line does not match: {0}".format(line))
         return wavelengths, intensities
 
     def insertSpectralDataFromFiles(self, filePaths, dataType='raw'):
@@ -108,7 +160,10 @@ class RamanDB(Database):
         return inserted
 
     def insertSpectralData(self, wavelengths, intensities, dataType, wineId, sampleId, algorithm=None):
-        spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
+        if wineId is None or sampleId is None:
+            spectrumId = None
+        else:
+            spectrumId = "{0:04}-{1:04d}".format(wineId, sampleId)
 
         count = self.executeCount('select count(*) as count from spectra where spectrumId = "{0}" and dataType = "{1}"'.format(spectrumId, dataType))
         if count != 0 :
@@ -116,7 +171,7 @@ class RamanDB(Database):
 
         values = []
         for x,y in zip(wavelengths, intensities):
-            values.append("({0}, {1}, '{2}', {3}, {4}, '{5}', now(), '{6}') ".format(x,float(y), dataType, wineId, sampleId, spectrumId, algorithm))
+            values.append("({0}, {1}, '{2}', '{3}', '{4}', '{5}', now(), '{6}') ".format(x,float(y), dataType, wineId, sampleId, spectrumId, algorithm))
 
         bigStatement = "insert into spectra (wavelength, intensity, dataType, wineId, sampleId, spectrumId, dateAdded, algorithm) values" + ','.join(values)
         self.execute( bigStatement)
@@ -152,6 +207,9 @@ class RamanDB(Database):
         return identifiers
 
     def getWinesSummary(self):
+        # mysql.connector.errors.ProgrammingError: 1055(
+        #     42000): Expression  # 4 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'raman.wines.dateOpened' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+
         self.execute(r"select files.wineId,  count(*) as nSamples, wines.* from files inner join wines on wines.wineId = files.wineId group by files.wineId order by files.wineId")
         rows = self.fetchAll()
         wines = []
@@ -211,7 +269,7 @@ class RamanDB(Database):
 
         nSamples = len(rows)//nWavelengths
         if nSamples == 0:
-            return None
+            return None, None
 
         spectra = np.zeros(shape=(nWavelengths, nSamples))
         spectrumIdentifiers = [""]*nSamples
@@ -245,7 +303,7 @@ class RamanDB(Database):
             {0}
         order by spectra.spectrumId, spectra.wavelength """.format(whereClause )
 
-        wavelengths = self.getWavelengths()
+        wavelengths = self.wavelengths
         nWavelengths = len(wavelengths)
 
         if limit is not None:
