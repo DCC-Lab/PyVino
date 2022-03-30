@@ -8,8 +8,8 @@ import re
 
 class TestRamanDatabase(unittest.TestCase):
     def setUp(self):
-        self.db = RamanDB()
-        # self.db = RamanDB("mysql://127.0.0.1/root@raman")
+        # self.db = RamanDB()
+        self.db = RamanDB("mysql://127.0.0.1/root@raman")
         self.assertIsNotNone(self.db)
 
     @unittest.skip("Now in setUp")
@@ -99,7 +99,7 @@ class TestRamanDatabase(unittest.TestCase):
         self.assertTrue(self.db.executeCount("select count(*) as count from spectra") > 0)
 
     def test13InsertAllCorrectedSpectra(self):
-        self.db.execute("select distinct spectrumId from spectra where dataType='raw' and spectrumId not in (select spectrumId from spectra where dataType='fluorescence-corrected')")
+        self.db.execute("select distinct spectrumId from spectra where spectrumId not in (select spectrumId from spectra where dataType='fluorescence-corrected')")
         records = self.db.fetchAll()
         if len(records) == 0:
             self.skipTest("All corrected spectra exist in the database")
@@ -107,6 +107,8 @@ class TestRamanDatabase(unittest.TestCase):
         for record in records:
             spectrumId = record["spectrumId"]
             spectrum, labels = self.db.getSpectrum(dataType='raw', spectrumId=spectrumId)
+            if spectrum is None:
+                continue
             degree = 100
             correctedSpectrum = self.db.subtractFluorescence(spectrum, polynomialDegree=degree)
             print(spectrumId)
