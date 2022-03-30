@@ -1,2 +1,6 @@
 
 *.db
+venv
+.idea
+env
+test.py

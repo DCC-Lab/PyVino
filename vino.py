@@ -108,12 +108,19 @@ class vinoPCA:
         plt.ylabel('2nd eigenvector')
         plt.show()
 
-    def showTransformData1D(self):
+    def showTransformedData1D(self):
 
         """
         :return: Plots the data transformed in the new vector space along the first eigenvector
         """
-        pass
+        plt.clf()
+        plt.figure(3)
+        plt.scatter(self.X_reduced[:, 0], np.zeros_like(self.X_reduced[:, 0]), c=self.getColorMap(), cmap='nipy_spectral', s=10)
+        ax = plt.gca()
+        ax.axes.yaxis.set_visible(False)
+        plt.title('First PCA direction')
+        plt.xlabel('1st eigenvector')
+        plt.show()
 
     def getAllEigenvectors(self):
 
@@ -130,13 +137,13 @@ class vinoPCA:
         Function to visualise eigenvectors
         :return: None
         """
-        plt.figure(3)
+        plt.figure(5)
         plt.title('1st eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 0])
-        plt.figure(4)
+        plt.figure(5)
         plt.title('2nd eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 1])
-        plt.figure(5)
+        plt.figure(6)
         plt.title('3rd eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 2])
         plt.show()

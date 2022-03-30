@@ -40,12 +40,12 @@ class TestVInoClass(unittest.TestCase):
 
     def testDoPCA(self):
         my_Spectrums = vinoPCA()
-
         self.assertIsNotNone(my_Spectrums)
 
         my_Spectrums.doPCA(10)
         my_Spectrums.showTransformedData3D()
         my_Spectrums.showTransformedData2D()
+        my_Spectrums.showTransformedData1D()
         my_Spectrums.showEigenvectors()
 
     def testvinoPCANoArgument(self):
@@ -55,11 +55,13 @@ class TestVInoClass(unittest.TestCase):
         my_Spectrums.doPCA(3)
         my_Spectrums.showTransformedData3D()
         my_Spectrums.showTransformedData2D()
+        my_Spectrums.showTransformedData1D()
         my_Spectrums.showEigenvectors()
 
     # def testInitDB(self):
     #     self.assertIsNotNone(vinoPCA().db)
 
+    @unittest.skip("Trop long")
     def testColormap(self):
         vino = vinoPCA()
         cm = vino.getColorMap()
