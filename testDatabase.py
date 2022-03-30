@@ -149,13 +149,14 @@ class TestRamanDatabase(unittest.TestCase):
         with self.assertRaises(ValueError):
             spectra = self.db.getSpectraWithId(dataType='unknown')
 
+    @unittest.skip("Only on dccote's computer")
     def test20DatabaseMySQLLocal(self):
         db = RamanDB("mysql://127.0.0.1/root@raman")
         self.assertIsNotNone(db)
         self.assertIsNotNone(db.getWavelengths())
 
     def test21Wavenumbers(self):
-        print(self.db.wavenumbers)
+        self.assertIsNotNone(self.db.wavenumbers)
 
     def test22Mask(self):
         print(sum(self.db.wavelengthMask))
