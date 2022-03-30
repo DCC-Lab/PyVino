@@ -1,0 +1,27 @@
+A	2022/01/12	Wine	Sirius Bordeaux 2018	https://www.saq.com/en/223537	VPN	France		Merlot, Cabernet Sauvignon	2.2	red	13
+B	2022/01/12	Wine	Ménage à Trois 2019	https://www.saq.com/en/10709152	VPN	United States		Cabernet Sauvignon	4.3	red	13.5
+C	2022/01/22	Wine	Woodbridge by Robert Mondavi	https://www.saq.com/en/48611	VPN	United States		Cabernet Sauvignon	7.3	red	13.5
+D	2022/01/28	Wine	Les Jamelles Pinot Noir Pays d'Oc	https://www.saq.com/en/10802904	VPN	France		point noir	4	red	13
+E	2022/01/27	Wine	Monasterio de las Vinas	https://www.saq.com/en/854422	VPN	Spain		70% Garnacha, 20% Tempranillo, 10% Carinena	2.1	red	13.5
+F	2022/02/05	Wine	Revolution	https://www.saq.com/en/12166892	EP	United States		Ruby cabernet 50 %, Carignan 32 %, Syrah 18 %	10	red	13.5
+G	2022/02/12	Wine	Milhistoraise	https://www.saq.com/en/13794111	EP	Spain		Grenache	1.7	red	14
+H	2022/02/13	Wine	Wallaroo Trail Shiraz	https://www.saq.com/en/12498459	EP	Australia		Shiraz 85 %, Cabernet sauvignon 10 %, Petit verdot 5 %	11	red	13.5
+I	2022/02/13	Wine	Toro loco	https://futailles.com/en/products/wine/red/toro-loco	EP	Spain		Tempranillo	0	red	12.5
+J	2022/02/13	Wine	Cantini	https://vinstriani.com/produits/cantini-rouge.html	EP	Italy		Sangiovese, Montepulciano, and Cabernet Sauvignon	-	red	12
+K	2022/02/13	Wine	Nicolas laloux	https://www.vinsenepicerie.com/en/nicolas-laloux-1/	EP	Ontario.Canada		Cabernet Sauvignon	-	red	12.5
+L	2022/02/13	Wine	smoky bay SHIRAZ	https://www.lcbo.com/webapp/wcs/stores/servlet/en/lcbo/red-wine-14001/smoky-bay-shiraz-17650#.YguvavXMIUo	EP	Australia		Shiraz	10	red	13
+M	2022/02/13	Wine	Dolce Venti	https://futailles.com/en/products/wine/red/dolce-venti	EP	Italy		Merlot	-	red	11.5
+N	2022/02/13	Wine	Aroma mi Amore	https://vinsarista.com/en/produit/wines/aroma-mi-amore/aroma-mi-amore-red-wine/	EP	Italy		Refosco	-	red	14.5
+O	2022/02/19	Wine	Sonho Aragonez	https://www.vivino.com/CA/en/sonho-aragonez/w/5905886	EP	Portugal		Aragonez		red	12.5
+P	2022/02/27	Wine	Double vie	https://vinsarista.com/en/produit/wines/double-vie/red-wine/	EP	Canada				red	12
+Q	2022/02/28	Wine	Danza	https://www.iga.net/en/product/wineargentinian-red-bonarda/00000_000000082424300222	EP	Argentina		Douce noir		red	13.7
+R	2022/02/23	Wine	bu	https://www.iga.net/en/product/winered-rosso-terre-sicilaine-bio-it/00000_000000005604913702	EP	Italy		Nero d'Avola 70% + Merlot 20% + Syrah 10%		red	12.5
+S	2022/02/24	Wine	Croix d'Or	https://futailles.com/en/products/wine/red/croix-dor	EP	Moldavie		pinot noir		red	12.5
+T	2022/02/18	Wine	AUFKELLEREIEN	https://www.iga.net/fr/produit/vin-blancallemagne---fruite-et-doux-9--alcool---18-ans--/00000_000000005604980687	AR	Allemagne				white	9
+U	2022/02/15	Wine	Macon Lugny les Cray	https://www.saq.com/en/13319061	DC	France	Bourgogne			white	
+V	2022/02/16	Wine	Brumont Cotes de Gascogne	https://www.saq.com/en/548883	DC	France		Sauvignon, Gros Manseng		white	12
+W	2022/02/18	Wine	Piuze	https://www.saq.com/en/14853741	DC	France		Chardonnay		white	12
+X	2022/02/19	Wine	Chateau de Maligny	https://www.saq.com/en/560763	DC	France	Chablis	Chardonnay		white	12.5
+Y	2022/02/21	Wine	L'impromptu	https://www.saq.com/en/13343264	DC	France		Gamay		red	14
+Z	2022/02/22	Wine	Sancerres Aurore Dezat	https://www.saq.com/en/13992897	DC	France	Sancerre	Chardonnay	1.6	white	12.5
+AA	2022/02/26	Wine	Lord de la Ragotiere	https://www.saq.com/en/10690501	DC	France		Chardonnay		white	12

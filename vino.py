@@ -4,19 +4,23 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from scipy import interpolate
 from BaselineRemoval import BaselineRemoval
-
+from ramandb import RamanDB
 
 class vinoPCA:
 
-    def __init__(self, Data, numberOfEachSamples):
+    def __init__(self):
+        self.db = RamanDB()
+        self.constraints = []
+        self.data, self.labels = self.db.getSpectraWithId(dataType='raw')
+        self.correctedData, correctedLabel = self.db.getSpectraWithId(dataType='fluorescence-corrected')
+        if self.labels != correctedLabel:
+            raise ValueError('Not all spectra are corrected')
 
-        """
-        :param Data: The data on wich PCA should be done.
-        :param colormap: An iterable that contains how many of each samples there is in Data, in the good order.
-        """
+        self.wavelengths = self.db.getWavelengths()
 
-        self.Data = Data
-        self.numberOfEachSamples = numberOfEachSamples
+        self.wavelengthMask = self.db.wavelengthMask
+        self.data = self.data[self.wavelengthMask, :]
+        self.wavelengths = self.wavelengths[self.wavelengthMask]
 
     def getColorMap(self):
 
@@ -25,50 +29,32 @@ class vinoPCA:
         :return: Return a colormap to visualise different samples on the plot.
         """
 
-        for i in range(0, len(self.numberOfEachSamples)):
-            if i == 0:
-                colormap = np.zeros(self.numberOfEachSamples[0])
-            else:
-                colormap = np.append(colormap, np.ones(self.numberOfEachSamples[i]) *5*i)
+        uniqueLabelsInOrder = sorted(set(self.labels))
+        possibleColorsInOrder = range(len(uniqueLabelsInOrder))
+        colors = {}
+        for identifier, color in zip(uniqueLabelsInOrder, possibleColorsInOrder):
+            colors[identifier] = color*5
 
-        return colormap
+        colormap = []
+        for identifier in self.labels:
+            colormap.append(colors[identifier])
 
-    def removeFLuo(self, Data):
+        return np.array(colormap)
+
+    def subtractFluorescence(self):
 
         """
-        Remove fluorescence background from the data given.
-        :param Data: The Data from witch you wish to remove fluo background.
-        :return: A new set of Data without the background.
+        Remove fluorescence background from the data.
+        :return: A corrected data without the background.
         """
 
-        nm = Data[:, 1]
-        cm = 1 / (632.8e-9) - 1 / (nm * 1e-9)
-        size = np.ma.size(Data, 1)
-        polynomial_degree = 100
-        filtered_datas = np.zeros(shape=(800, size - 1))
+        polynomial_degree = 5
+        correctedSpectra = np.empty_like(self.data)
+        for i in range(self.data.shape[1]):
+            spectre = self.data[:, i]
+            correctedSpectra[:, i] = BaselineRemoval(spectre).IModPoly(polynomial_degree)
 
-        # for column in range(2, size):
-        #     y = Data[:, column]
-        #     d = 25
-        #     f2 = interpolate.interp1d(cm[199:][::d], y[199:][::d], kind='quadratic')
-        #     y = y[200:1000] - f2(cm[200:1000])
-        #     y = (y - min(y)) / max(y - min(y))
-        #     filt_datas[:, column - 1] = y
-        # filt_datas[:, 0] = cm[200:1000]
-
-        for column in range(2, size):
-            spectre = Data[200:1000, column]
-            baseObj = BaselineRemoval(spectre)
-            values = baseObj.IModPoly(polynomial_degree)
-            # values = values - min(values) # Si tu normalises, tu perds les composants communs (Alcool particulèrement)
-            # values = values/max(values)   # tu perds aussi le degrés de présence (Plus ou moins bouchonné ?)
-                                            # Si tu normalises pas, tu favorises les composants communs présents à
-                                            # différents degrés (Plus ou moins d'alcool). Donc tester avec et sans?
-            filtered_datas[:, column - 1] = values
-
-        filtered_datas[:, 0] = Data[200:1000, 1]
-
-        return filtered_datas
+        return correctedSpectra
 
     def doPCA(self, n:int):
 
@@ -77,11 +63,9 @@ class vinoPCA:
         :param n: number of componants to get from the PCA
         :return: Returns nothing. Just creats an array of the transformed datas into the new vector space
         """
-
-        new_Datas = self.removeFLuo(self.Data)
-        new_Datas = np.transpose(new_Datas)
-        self.X_PCA = PCA(n_components=n)
-        self.X_reduced = self.X_PCA.fit_transform(new_Datas[1:, :])
+        self.pca = PCA(n_components=n)
+        correctedData = self.subtractFluorescence()
+        self.X_reduced = self.pca.fit_transform(correctedData.T)
 
     def showTransformedData3D(self):
 
@@ -94,9 +78,9 @@ class vinoPCA:
         fig = plt.figure(1, figsize=(8, 6))
         ax = Axes3D(fig, elev=-150, azim=110)
         ax.scatter(
-            self.X_reduced[:700, 0],
-            self.X_reduced[:700, 1],
-            self.X_reduced[:700, 2],
+            self.X_reduced[:, 0],
+            self.X_reduced[:, 1],
+            self.X_reduced[:, 2],
             c=self.getColorMap(),
             cmap='nipy_spectral',
             s=10)
@@ -118,7 +102,7 @@ class vinoPCA:
 
         plt.clf()
         plt.figure(2)
-        plt.scatter(self.X_reduced[:700, 0], self.X_reduced[:700, 1], c=self.getColorMap(), cmap='nipy_spectral', s=10)
+        plt.scatter(self.X_reduced[:, 0], self.X_reduced[:, 1], c=self.getColorMap(), cmap='nipy_spectral', s=10)
         plt.title('First two PCA directions')
         plt.xlabel('1st eigenvector')
         plt.ylabel('2nd eigenvector')
@@ -138,7 +122,7 @@ class vinoPCA:
         :return: an array of n eigenvector
         """
 
-        return self.X_PCA.components_.transpose()
+        return self.pca.components_.transpose()
 
     def showEigenvectors(self):
 
@@ -148,13 +132,13 @@ class vinoPCA:
         """
         plt.figure(3)
         plt.title('1st eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 0])
+        plt.plot(self.pca.components_.transpose()[:, 0])
         plt.figure(4)
         plt.title('2nd eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 1])
+        plt.plot(self.pca.components_.transpose()[:, 1])
         plt.figure(5)
         plt.title('3rd eigenvector')
-        plt.plot(self.X_PCA.components_.transpose()[:, 2])
+        plt.plot(self.pca.components_.transpose()[:, 2])
         plt.show()
 
     def getTransformedDatas(self):
@@ -173,7 +157,7 @@ class vinoPCA:
         :return: array of the scree values, from most important to least
         """
 
-        return self.X_PCA.explained_variance_ratio_
+        return self.pca.explained_variance_ratio_
 
     def plotScreeValues(self):
 
