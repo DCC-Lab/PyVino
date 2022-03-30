@@ -8,8 +8,8 @@ import re
 
 class TestRamanDatabase(unittest.TestCase):
     def setUp(self):
-        # self.db = RamanDB()
-        self.db = RamanDB("mysql://127.0.0.1/root@raman")
+        self.db = RamanDB()
+        # self.db = RamanDB("mysql://127.0.0.1/root@raman")
         self.assertIsNotNone(self.db)
 
     @unittest.skip("Now in setUp")
