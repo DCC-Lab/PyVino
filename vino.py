@@ -140,10 +140,10 @@ class vinoPCA:
         plt.figure(5)
         plt.title('1st eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 0])
-        plt.figure(5)
+        plt.figure(6)
         plt.title('2nd eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 1])
-        plt.figure(6)
+        plt.figure(7)
         plt.title('3rd eigenvector')
         plt.plot(self.pca.components_.transpose()[:, 2])
         plt.show()
@@ -185,6 +185,32 @@ class vinoPCA:
             ax.bar_label(bars, fmt='%.4f', fontsize=8)
         plt.show()
 
+    def getSingularValues(self):
+
+        """
+        Function to get all of the singular values
+        :return: an array of n eigenvalues
+        """
+
+        return self.pca.singular_values_
+
+    def plotMeanDeviationSpectrum(self):
+
+        """
+        Function that plots the mean spectrum with the standard deviation (in grey)
+        :return: None
+        """
+
+        meanData = np.mean(self.data, axis=1)
+        stdData = np.std(self.data)
+
+        plt.figure(8)
+        plt.plot(self.wavelengths, meanData)
+        plt.fill_between(self.wavelengths, meanData - stdData, meanData + stdData, color='#CCCCCC')
+        plt.title('Mean spectrum and standard deviation')
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Intensity (arb. un.)')
+        plt.show()
 
 if __name__ == "__main__":
 
