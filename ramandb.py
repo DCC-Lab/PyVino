@@ -2,6 +2,7 @@ import dcclab
 from dcclab.database import *
 import numpy as np
 import requests
+import pandas as pd
 from BaselineRemoval import BaselineRemoval
 import re
 
@@ -330,6 +331,24 @@ class RamanDB(dcclab.database.Database):
             spectrumIdentifiers[i//nWavelengths] = row['spectrumId']
 
         return spectra, spectrumIdentifiers
+
+    def getAverageSpectra(self):
+
+        spectra, labels = self.getSpectraWithId(dataType='raw', color='red')
+
+        splitId = []
+        for i in range(0, len(labels)):
+            splitId.append(labels[i].split("-"))
+        wineId = list(list(zip(*splitId))[0])
+        allWineId = sorted(set(wineId))
+
+        spectraDataFrame = pd.DataFrame(spectra, columns=wineId)
+        averageSpectra = np.zeros((1044, len(allWineId)))
+
+        for i, j in enumerate(allWineId):
+            averageSpectra[:, i] = spectraDataFrame[j].mean(axis='columns')
+
+        return averageSpectra
 
     def subtractFluorescence(self, rawSpectra, polynomialDegree=5):
 
