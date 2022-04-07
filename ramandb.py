@@ -348,7 +348,7 @@ class RamanDB(dcclab.database.Database):
         for i, j in enumerate(allWineId):
             averageSpectra[:, i] = spectraDataFrame[j].mean(axis='columns')
 
-        return averageSpectra
+        return averageSpectra, allWineId
 
     def subtractFluorescence(self, rawSpectra, polynomialDegree=5):
 

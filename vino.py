@@ -13,10 +13,12 @@ class vinoPCA:
         self.constraints = []
         self.data, self.labels = self.db.getSpectraWithId(dataType='raw')
         self.correctedData, correctedLabel = self.db.getSpectraWithId(dataType='fluorescence-corrected')
+        self.averageSpectra, self.spectraID = self.db.getAverageSpectra()
         if self.labels != correctedLabel:
             raise ValueError('Not all spectra are corrected')
 
         self.wavelengths = self.db.getWavelengths()
+        self.fullWaveLengths = self.wavelengths
 
         self.wavelengthMask = range(200, 1000)
         self.data = self.data[self.wavelengthMask, :]
@@ -117,6 +119,22 @@ class vinoPCA:
         plt.xlabel('1st eigenvector')
         plt.show()
 
+    def showAverageInputSpectrums(self):
+
+        """
+        Creats a plot of the average spretrums of each independant bottles.
+        :return: A plot
+        """
+
+        plt.clf()
+        plt.figure(4)
+        plt.plot(self.fullWaveLengths, self.averageSpectra)
+        plt.title('Average spectras')
+        plt.xlabel('Wavelength [nm]')
+        plt.ylabel('Counts [-]')
+        plt.show()
+
+
     def getAllEigenvectors(self):
 
         """
@@ -214,3 +232,4 @@ if __name__ == "__main__":
     my_Spectrums.showTransformedData3D()
     my_Spectrums.showTransformedData2D()
     my_Spectrums.showEigenvectors()
+    my_Spectrums.showAverageInputSpectrums()
