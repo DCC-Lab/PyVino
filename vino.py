@@ -29,15 +29,10 @@ class vinoPCA:
         :return: Return a colormap to visualise different samples on the plot.
         """
 
-        uniqueLabelsInOrder = sorted(set(self.labels))
-        possibleColorsInOrder = range(len(uniqueLabelsInOrder))
-        colors = {}
-        for identifier, color in zip(uniqueLabelsInOrder, possibleColorsInOrder):
-            colors[identifier] = color*5
-
-        colormap = []
-        for identifier in self.labels:
-            colormap.append(colors[identifier])
+        splitId = []
+        for i in range(0, len(self.labels)):
+            splitId.append(self.labels[i].split("-"))
+        colormap = list(map(int, list(zip(*splitId))[0]))
 
         return np.array(colormap)
 
@@ -214,10 +209,7 @@ class vinoPCA:
 
 if __name__ == "__main__":
 
-    iterable = [31, 30, 30, 30, 80, 31, 33, 31, 30, 30, 30, 30, 30, 30, 30, 30, 104, 30, 30] # sans vin blanc parceque ça shit le aspect ratio
-    Data = np.genfromtxt('/Users/Shooshoo/PycharmProjects/PCA_DCCLab/DataVino_Sorted.csv', delimiter=',')
-
-    my_Spectrums = vinoPCA(Data, iterable)
+    my_Spectrums = vinoPCA()
     my_Spectrums.doPCA(10)
     my_Spectrums.showTransformedData3D()
     my_Spectrums.showTransformedData2D()
